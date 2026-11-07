@@ -68,6 +68,8 @@
     .form-group label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
     .form-control { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.875rem; width: 100%; outline: none; background: white; }
     .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-light); }
+    .input-inline { padding: 6px 8px; font-size: 0.85rem; border: 1px solid var(--border-color); border-radius: 6px; background: #fff; width: 100%; }
+    .input-inline:focus { border-color: var(--primary); background: #f0f7ff; outline: none; }
 
     .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px; }
     .metric-card { background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; }
@@ -77,7 +79,7 @@
     .table-responsive { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem; }
     th { background: var(--bg-main); padding: 10px 14px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color); white-space: nowrap; }
-    td { padding: 12px 14px; border-bottom: 1px solid var(--border-color); color: var(--text-main); vertical-align: middle; white-space: nowrap; }
+    td { padding: 10px 12px; border-bottom: 1px solid var(--border-color); color: var(--text-main); vertical-align: middle; white-space: nowrap; }
     tr:hover td { background-color: var(--bg-main); }
 
     .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
@@ -206,7 +208,7 @@
     <div id="tab-allocator" class="tab-content active">
       <div class="card">
         <div class="card-title">
-          <span>Gestione Turni e Dispacciamento a Cascata (Tutto il Mese)</span>
+          <span>Gestione Turni e Dispacciamento a Cascata (Tutto il Mese - Modifica Diretta Attiva)</span>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <input type="month" id="cascade-month-filter" class="form-control" value="2026-09" style="width: 150px;" onchange="renderMonthlyCascade()">
             <button class="btn btn-excel" onclick="document.getElementById('excel-file-input').click()">📂 Carica Excel Agenzia</button>
@@ -335,11 +337,11 @@
       </div>
     </div>
 
-    <!-- TAB 5: COMPLETE ANAGRAFICA & DIRECTORY -->
+    <!-- TAB 5: COMPLETE ANAGRAFICA & DIRECTORY (ORDINATA PER COGNOME) -->
     <div id="tab-anagrafica" class="tab-content">
       <div class="card">
         <div class="card-title">
-          <span>📁 Anagrafica Ufficiale Famiglia Guide & Contatti</span>
+          <span>📁 Anagrafica Ufficiale Famiglia Guide & Contatti (Ordinata per Cognome)</span>
           <button class="btn btn-primary" onclick="openGuideModal()">+ Nuova Guida / Modifica</button>
         </div>
 
@@ -526,17 +528,18 @@
       { name: "BASILICA DI SAN PIETRO", price: 230.00, type: "vaticano" }
     ];
 
+    // 10 GUIDE UFFICIALI DELLA FAMIGLIA (ORDINATE ALFABETICAMENTE PER COGNOME)
     const DEFAULT_GUIDES = [
-      { id: 1, name: "Cinzia Sansovino", phone: "+39335229654", email: "cinziasan@gmail.com", notes: "Vaticano, Famiglia", status: "Active" },
+      { id: 8, name: "Francesco Cecilia", phone: "+393392351237", email: "francesco.cecilia69@gmail.com", notes: "Highlights, Famiglia", status: "Active" },
+      { id: 4, name: "Oreste Cicatiello", phone: "+393358166561", email: "orestecicatiello@gmail.com", notes: "Castel Sant'Angelo, Famiglia", status: "Active" },
+      { id: 6, name: "Patrizia Cocco", phone: "+393470343934", email: "coccopatrizia@yahoo.it", notes: "Famiglia", status: "Active" },
+      { id: 9, name: "Simone De Filippis", phone: "+393330000001", email: "simone@example.com", notes: "Vaticano, Colosseo, Famiglia", status: "Active" },
+      { id: 5, name: "Yvonne de Vrijes", phone: "+393394765719", email: "y.j.devrijer@gmail.com", notes: "Inglese, Tedesco, Famiglia", status: "Active" },
+      { id: 10, name: "Fabiola Di Profio", phone: "+393330000002", email: "fabiola@example.com", notes: "Vaticano, Ghetto, Famiglia", status: "Active" },
       { id: 2, name: "Flavia Ficorilli", phone: "+393385486747", email: "flavia.ficorilli@alice.it", notes: "Colosseo, Basiliche, Famiglia", status: "Active" },
       { id: 3, name: "Sara Masini", phone: "+393938693898", email: "saramasini15@gmail.com", notes: "Highlights, Famiglia", status: "Active" },
-      { id: 4, name: "Oreste Cicatiello", phone: "+393358166561", email: "orestecicatiello@gmail.com", notes: "Castel Sant'Angelo, Famiglia", status: "Active" },
-      { id: 5, name: "Yvonne de Vrijes", phone: "+393394765719", email: "y.j.devrijer@gmail.com", notes: "Inglese, Tedesco, Famiglia", status: "Active" },
-      { id: 6, name: "Patrizia Cocco", phone: "+393470343934", email: "coccopatrizia@yahoo.it", notes: "Famiglia", status: "Active" },
-      { id: 7, name: "Lisa Titova", phone: "+393486804456", email: "", notes: "Vaticano, Inglese, Famiglia", status: "Active" },
-      { id: 8, name: "Francesco Cecilia", phone: "+393392351237", email: "francesco.cecilia69@gmail.com", notes: "Highlights, Famiglia", status: "Active" },
-      { id: 9, name: "Simone De Filippis", phone: "+393330000001", email: "simone@example.com", notes: "Vaticano, Colosseo, Famiglia", status: "Active" },
-      { id: 10, name: "Fabiola Di Profio", phone: "+393330000002", email: "fabiola@example.com", notes: "Vaticano, Ghetto, Famiglia", status: "Active" }
+      { id: 1, name: "Cinzia Sansovino", phone: "+39335229654", email: "cinziasan@gmail.com", notes: "Vaticano, Famiglia", status: "Active" },
+      { id: 7, name: "Lisa Titova", phone: "+393486804456", email: "", notes: "Vaticano, Inglese, Famiglia", status: "Active" }
     ];
 
     const DEFAULT_TOURS = [
@@ -586,6 +589,29 @@
 
       const s = SERVICES_CATALOG.find(x => x.name.toLowerCase() === serviceName.toLowerCase());
       return s ? s.price : 245.00;
+    }
+
+    // --- AGGIORNAMENTO DIRETTO CAMPI TOUR (LIVE EDITING) ---
+    function updateTourField(tourId, field, value) {
+      const t = tours.find(x => x.id === tourId);
+      if (t) {
+        if (field === 'pax') {
+          t.pax = parseInt(value) || 0;
+        } else {
+          t[field] = value.trim();
+        }
+        saveData();
+        renderAllViewsExceptCascade();
+      }
+    }
+
+    function renderAllViewsExceptCascade() {
+      renderMonthlyReport();
+      renderCalendarMatch();
+      renderPlanner();
+      renderAnagrafica();
+      renderSingleGuideView();
+      renderAccountPanel();
     }
 
     // --- IMPORTAZIONE TOUR DA EXCEL O CSV CON GESTIONE "+" ---
@@ -860,7 +886,7 @@
       return `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`;
     }
 
-    // --- CASCADING MONTHLY DISPATCHER RENDER ---
+    // --- CASCADING MONTHLY DISPATCHER RENDER (CON MODIFICA DIRETTA NEL TESTO) ---
     function renderMonthlyCascade() {
       const monthVal = document.getElementById('cascade-month-filter').value;
       const [year, month] = monthVal.split('-').map(Number);
@@ -921,13 +947,13 @@
           <table>
             <thead>
               <tr>
-                <th>Tour</th>
+                <th style="width: 120px;">Tour</th>
                 <th>Service Remark</th>
-                <th>Pax</th>
-                <th>Slot</th>
+                <th style="width: 80px;">Pax</th>
+                <th style="width: 100px;">Slot</th>
                 <th>Guida Assegnata</th>
                 <th>Stato</th>
-                <th>Azioni</th>
+                <th style="width: 90px;">Azioni</th>
               </tr>
             </thead>
             <tbody>
@@ -951,10 +977,27 @@
 
         tableHtml += `
           <tr id="tour-row-${t.id}" class="${rowClass}">
-            <td><strong>${t.groupCode}</strong></td>
-            <td>${t.service}</td>
-            <td>${t.pax || 25} pax</td>
-            <td><strong>${t.slot}</strong></td>
+            <td>
+              <input type="text" class="input-inline" style="font-weight:700;" value="${t.groupCode}" 
+                list="group-list"
+                onchange="updateTourField('${t.id}', 'groupCode', this.value)">
+            </td>
+            <td>
+              <input type="text" class="input-inline" value="${t.service}" 
+                list="service-list"
+                onchange="updateTourField('${t.id}', 'service', this.value)">
+            </td>
+            <td>
+              <input type="number" class="input-inline" style="width:70px;" value="${t.pax || 25}" min="1" max="150"
+                onchange="updateTourField('${t.id}', 'pax', this.value)">
+            </td>
+            <td>
+              <select class="input-inline" style="font-weight:600;" onchange="updateTourField('${t.id}', 'slot', this.value); renderMonthlyCascade();">
+                <option value="FULL" ${t.slot === 'FULL' ? 'selected' : ''}>FULL</option>
+                <option value="AM" ${t.slot === 'AM' ? 'selected' : ''}>AM</option>
+                <option value="PM" ${t.slot === 'PM' ? 'selected' : ''}>PM</option>
+              </select>
+            </td>
             <td><select class="form-control" onchange="assignGuideToTour('${t.id}', this.value)">${guideOpts}</select></td>
             <td><span class="badge ${isUnassigned ? 'badge-unassigned' : 'badge-available'}">${isUnassigned ? '🚨 NON ASSEGNATA' : 'Assegnata'}</span></td>
             <td><button class="btn btn-danger-light btn-sm" onclick="deleteTour('${t.id}')">Rimuovi</button></td>
@@ -1091,7 +1134,7 @@
       }, 150);
     }
 
-    // --- MAGIC SHUFFLE BILANCIATO ---
+    // --- MAGIC SHUFFLE AGGIORNATO (SIMONE/CINZIA PRIVILEGIATI, STESSO GIORNO SIGLE UGUALI, COMPENSI EQUI) ---
     function runMagicShuffle() {
       if (!confirm("Vuoi eseguire l'assegnazione automatica Magic Shuffle per i turni del mese?")) return;
 
@@ -1110,6 +1153,23 @@
       const privilegedCodes = ["LI", "LB", "LJ", "LR"];
 
       unassignedTours.forEach(t => {
+        // Regola dello stesso giorno: se c'è un turno PM (es. HIGH) con la stessa sigla del mattino (AM/VAT), prova a dare la precedenza alla guida del mattino
+        if (t.slot === 'PM' || t.slot === 'FULL') {
+          const morningMatch = tours.find(x => x.date === t.date && x.groupCode === t.groupCode && x.guideId && (x.slot === 'AM' || x.slot === 'FULL') && x.id !== t.id);
+          if (morningMatch) {
+            const gAssignedMorning = guides.find(g => g.id == morningMatch.guideId);
+            if (gAssignedMorning && gAssignedMorning.status === 'Active') {
+              const avail = availabilities[`${gAssignedMorning.id}_${t.date}`] || 'FULL';
+              const isBusy = tours.some(x => x.guideId == gAssignedMorning.id && x.date === t.date && (x.slot === t.slot || x.slot === 'FULL'));
+              if (avail !== 'OFF' && avail !== 'AM' && !isBusy) {
+                t.guideId = gAssignedMorning.id;
+                guideFeeTotals[gAssignedMorning.id] += getTourFee(t.service);
+                return;
+              }
+            }
+          }
+        }
+
         let availableGuides = guides.filter(g => {
           if (g.status !== 'Active') return false;
           const avail = availabilities[`${g.id}_${t.date}`] || 'FULL';
@@ -1457,11 +1517,13 @@
       saveData(); renderPlanner(); renderCalendarMatch();
     }
 
-    // --- TAB 5: COMPLETE ANAGRAFICA ---
+    // --- TAB 5: COMPLETE ANAGRAFICA (ORDINATA ALFABETICAMENTE PER COGNOME) ---
     function renderAnagrafica() {
       const search = document.getElementById('search-guide-input').value.toLowerCase();
       const tbody = document.getElementById('anagrafica-table-body');
       tbody.innerHTML = '';
+
+      guides.sort((a, b) => a.name.localeCompare(b.name, 'it', { sensitivity: 'base' }));
 
       const filteredGuides = guides.filter(g => 
         g.name.toLowerCase().includes(search) || 
@@ -1531,6 +1593,7 @@
         guides.push({ id: Date.now(), name, phone, email, notes, status });
       }
 
+      guides.sort((a, b) => a.name.localeCompare(b.name, 'it', { sensitivity: 'base' }));
       saveData(); closeGuideModal(); populateDropdowns(); renderAnagrafica();
     }
 
@@ -1720,6 +1783,7 @@
     }
 
     function initApp() {
+      guides.sort((a, b) => a.name.localeCompare(b.name, 'it', { sensitivity: 'base' }));
       populateDropdowns();
       initFirebase();
       renderAllViews();
