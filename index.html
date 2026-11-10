@@ -136,6 +136,8 @@
     .sync-online { background-color: var(--success-light); color: var(--success); }
     .sync-offline { background-color: var(--warning-light); color: var(--warning); }
 
+    .loading-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:2000; color:white; font-size:1.2rem; font-weight:600; flex-direction:column; gap:12px; }
+
     @media print {
       body { background: white; padding: 0; }
       .header-actions, .nav-tabs, .btn, .controls-bar, .firebase-config-box, .modal-footer, #gam-month-filter, .modal-header button { display: none !important; }
@@ -148,10 +150,21 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-  <!-- Libreria per Lettura Excel (.xlsx / .csv) -->
+  <!-- Libreria SheetJS per Excel / CSV / Numbers / PDF Text -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Tesseract.js per OCR da Foto / Immagini -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body>
+
+  <div class="loading-overlay" id="loading-overlay">
+    <div style="border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite;"></div>
+    <span id="loading-text">Elaborazione file in corso...</span>
+  </div>
+
+  <style>
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
 
   <div class="container">
     <header>
@@ -190,8 +203,8 @@
     <datalist id="group-list"></datalist>
     <datalist id="service-list"></datalist>
 
-    <!-- Input file nascosto per caricare Excel -->
-    <input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" style="display: none;" onchange="importExcelTours(event)">
+    <!-- Input file universale: accetta Excel, Numbers, CSV, PDF e Foto (PNG, JPG, HEIC) -->
+    <input type="file" id="universal-file-input" accept=".xlsx, .xls, .csv, .numbers, application/vnd.apple.numbers, .pdf, image/*" style="display: none;" onchange="handleUniversalFileImport(event)">
 
     <!-- Navigation Tabs -->
     <div class="nav-tabs">
@@ -211,7 +224,7 @@
           <span>Gestione Turni e Dispacciamento a Cascata (Tutto il Mese - Modifica Diretta Attiva)</span>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <input type="month" id="cascade-month-filter" class="form-control" value="2026-09" style="width: 150px;" onchange="renderMonthlyCascade()">
-            <button class="btn btn-excel" onclick="document.getElementById('excel-file-input').click()">📂 Carica Excel Agenzia</button>
+            <button class="btn btn-excel" onclick="document.getElementById('universal-file-input').click()">📂 Carica File / PDF / Foto (OCR)</button>
             <button class="btn btn-magic" onclick="runMagicShuffle()">🪄 Magic Shuffle (Famiglia)</button>
           </div>
         </div>
@@ -223,11 +236,11 @@
               <input type="date" id="alloc-date" class="form-control" value="2026-09-02">
             </div>
             <div class="form-group" style="width: 180px;">
-              <label>Tour (es. LI, 5160)</label>
+              <label>Tour (es. LI, M3A)</label>
               <input type="text" id="alloc-group-select" class="form-control" list="group-list" placeholder="Digita o seleziona...">
             </div>
             <div class="form-group" style="width: 240px;">
-              <label>Service Remark (es. VAT + CSS)</label>
+              <label>Service Remark (es. HIGH PM + CENA)</label>
               <input type="text" id="alloc-service-select" class="form-control" list="service-list" placeholder="Digita o seleziona..." oninput="updateAutoQty()">
             </div>
             <div class="form-group" style="width: 90px;">
@@ -513,7 +526,7 @@
 
   <script>
     const TOUR_CODES = [
-      "LI", "LB", "DJ", "5160", "M3A", "LR", "HF", "6350", "6390", "KIE", "HA", "HG", "LK", "4810", "5300", "6390", "6400"
+      "LI", "LB", "DJ", "5160", "M3A", "LR", "HF", "6350", "6390", "KIE", "HA", "HG", "LK", "4810", "5300", "6400"
     ];
 
     const SERVICES_CATALOG = [
@@ -523,12 +536,12 @@
       { name: "COLOSSEUM GLOBUS NO CHOICE", price: 245.00, type: "colosseo" },
       { name: "HIGH PM", price: 245.00, type: "other" },
       { name: "HIGH AM", price: 245.00, type: "other" },
+      { name: "HIGH PM + CENA", price: 295.00, type: "other" },
       { name: "CSS", price: 245.00, type: "other" },
       { name: "SERALE GHETTO", price: 230.00, type: "other" },
       { name: "BASILICA DI SAN PIETRO", price: 230.00, type: "vaticano" }
     ];
 
-    // 10 GUIDE UFFICIALI DELLA FAMIGLIA (ORDINATE ALFABETICAMENTE PER COGNOME)
     const DEFAULT_GUIDES = [
       { id: 8, name: "Francesco Cecilia", phone: "+393392351237", email: "francesco.cecilia69@gmail.com", notes: "Highlights, Famiglia", status: "Active" },
       { id: 4, name: "Oreste Cicatiello", phone: "+393358166561", email: "orestecicatiello@gmail.com", notes: "Castel Sant'Angelo, Famiglia", status: "Active" },
@@ -544,7 +557,7 @@
 
     const DEFAULT_TOURS = [
       { id: '1', date: '2026-09-02', slot: 'FULL', groupCode: 'LI', service: 'VAT CHOICE AM + CSS', pax: 13, guideId: 1, status: 'Scheduled' },
-      { id: '2', date: '2026-09-02', slot: 'PM', groupCode: 'LI', service: 'HIGH PM', pax: 1, guideId: '', status: 'Scheduled' }
+      { id: '2', date: '2026-09-02', slot: 'PM', groupCode: 'M3A', service: 'HIGH PM + CENA', pax: 1, guideId: '', status: 'Scheduled' }
     ];
 
     const DEFAULT_AVAILABILITIES = {
@@ -567,7 +580,7 @@
         return 245.00;
       }
 
-      if (upper.includes('+')) {
+      if (upper.includes('+') && !upper.includes('CENA')) {
         const parts = serviceName.split('+');
         let totalSum = 0;
         parts.forEach(part => {
@@ -583,7 +596,7 @@
         return totalSum;
       }
 
-      if (upper.includes('VAT')) {
+      if (upper.includes('VAT') || upper.includes('CENA')) {
         return 295.00;
       }
 
@@ -591,7 +604,6 @@
       return s ? s.price : 245.00;
     }
 
-    // --- AGGIORNAMENTO DIRETTO CAMPI TOUR (LIVE EDITING) ---
     function updateTourField(tourId, field, value) {
       const t = tours.find(x => x.id === tourId);
       if (t) {
@@ -614,92 +626,192 @@
       renderAccountPanel();
     }
 
-    // --- IMPORTAZIONE TOUR DA EXCEL O CSV CON GESTIONE "+" ---
-    function importExcelTours(event) {
+    // --- GESTORE UNIVERSALE DI IMPORTAZIONE (Excel, Numbers, CSV, PDF, Foto con OCR) ---
+    function handleUniversalFileImport(event) {
       const file = event.target.files[0];
       if (!file) return;
 
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const firstSheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[firstSheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+      const fileType = file.type;
+      const fileName = file.name.toLowerCase();
 
-          if (jsonData.length === 0) {
-            alert("Il file caricato sembra essere vuoto.");
-            return;
-          }
+      const overlay = document.getElementById('loading-overlay');
+      const loadText = document.getElementById('loading-text');
 
-          let addedCount = 0;
-          jsonData.forEach(row => {
-            const rawDate = row['SERVICE DATE'] || row['Data'] || row['DATA'] || row['date'] || document.getElementById('alloc-date').value;
-            const groupCode = (row['TOUR'] || row['Gruppo'] || row['Codice Gruppo'] || 'GENERICO').toString().trim();
-            const service = (row['SERVICE REMARK'] || row['Servizio'] || row['Tour'] || 'Servizio Generico').toString().trim();
-            
-            let slot = 'AM';
-            const upperService = service.toUpperCase();
-            if (upperService.includes('+') || upperService.includes('FULL') || (upperService.includes('AM') && upperService.includes('PM'))) {
-              slot = 'FULL';
-            } else if (upperService.includes('PM') || upperService.includes('POMERIGGIO') || upperService.includes('SERALE')) {
-              slot = 'PM';
-            } else if (upperService.includes('AM') || upperService.includes('MATTINA')) {
-              slot = 'AM';
-            } else {
-              const rawSlot = (row['Slot'] || row['SLOT'] || '').toString().toUpperCase();
-              if (rawSlot.includes('FULL') || rawSlot.includes('+')) slot = 'FULL';
-              else if (rawSlot.includes('PM')) slot = 'PM';
-            }
+      if (fileType.startsWith('image/') || fileName.endsWith('.png') || fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.heic')) {
+        loadText.textContent = "Estrazione testo da foto in corso (OCR)...";
+        overlay.style.display = 'flex';
 
-            const pax = parseInt(row['PAX'] || row['Pax'] || row['Partecipanti'] || 25) || 25;
-
-            let dateStr = rawDate;
-            if (typeof rawDate === 'number') {
-              const parsedDate = XLSX.SSF.parse_date_code(rawDate);
-              if (parsedDate && parsedDate.y) {
-                dateStr = `${parsedDate.y}-${String(parsedDate.m).padStart(2,'0')}-${String(parsedDate.d).padStart(2,'0')}`;
-              }
-            } else if (typeof rawDate === 'string' && rawDate.includes('/')) {
-              const parts = rawDate.split('/');
-              if (parts.length === 3) {
-                const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
-                dateStr = `${year}-${String(parts[1]).padStart(2,'0')}-${String(parts[0]).padStart(2,'0')}`;
-              }
-            } else if (typeof rawDate === 'string' && rawDate.length >= 10) {
-              dateStr = rawDate.substring(0, 10);
-            }
-
-            if (!dateStr || dateStr.length !== 10 || !dateStr.includes('-')) {
-              dateStr = document.getElementById('alloc-date').value;
-            }
-
-            tours.push({
-              id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
-              date: dateStr,
-              slot: slot,
-              groupCode: groupCode,
-              service: service,
-              pax: pax,
-              guideId: '',
-              status: 'Scheduled'
-            });
-            addedCount++;
-          });
-
-          saveData();
-          renderAllViews();
-          alert(`Importazione Excel completata con successo! Caricati ${addedCount} servizi.`);
-        } catch (err) {
+        Tesseract.recognize(
+          file,
+          'ita+eng',
+          { logger: m => console.log(m) }
+        ).then(({ data: { text } }) => {
+          overlay.style.display = 'none';
+          processTextLines(text);
+        }).catch(err => {
+          overlay.style.display = 'none';
           console.error(err);
-          alert("Errore durante la lettura del file Excel.");
-        }
-      };
-      reader.readAsArrayBuffer(file);
+          alert("Errore durante la lettura OCR dell'immagine.");
+        });
+
+      } else if (fileName.endsWith('.pdf') || fileType === 'application/pdf') {
+        loadText.textContent = "Lettura documento PDF in corso...";
+        overlay.style.display = 'flex';
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            let allText = "";
+            workbook.SheetNames.forEach(sheetName => {
+              const worksheet = workbook.Sheets[sheetName];
+              allText += XLSX.utils.sheet_to_csv(worksheet) + "\n";
+            });
+            overlay.style.display = 'none';
+            processTextLines(allText);
+          } catch (err) {
+            overlay.style.display = 'none';
+            console.error(err);
+            alert("Impossibile leggere il PDF. Prova a caricarlo convertito in Excel o Foto.");
+          }
+        };
+        reader.readAsArrayBuffer(file);
+
+      } else {
+        // Excel, Numbers, CSV
+        loadText.textContent = "Elaborazione file foglio di calcolo...";
+        overlay.style.display = 'flex';
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+            overlay.style.display = 'none';
+            if (jsonData.length === 0) {
+              alert("Il file caricato sembra vuoto.");
+              return;
+            }
+
+            let addedCount = 0;
+            jsonData.forEach(row => {
+              const rawDate = row['SERVICE DATE'] || row['Data'] || row['DATA'] || row['date'] || document.getElementById('alloc-date').value;
+              const groupCode = (row['TOUR'] || row['Gruppo'] || row['Codice Gruppo'] || row['Tour'] || 'GENERICO').toString().trim();
+              const service = (row['SERVICE REMARK'] || row['Service Remark'] || row['Servizio'] || row['Tour'] || 'Servizio Generico').toString().trim();
+              
+              let slot = 'AM';
+              const upperService = service.toUpperCase();
+              
+              if (upperService.includes('CENA') || upperService.includes('PM') || upperService.includes('POMERIGGIO') || upperService.includes('SERALE')) {
+                slot = 'PM';
+              } else if (upperService.includes('+') && !upperService.includes('CENA')) {
+                slot = 'FULL';
+              } else if (upperService.includes('FULL') || (upperService.includes('AM') && upperService.includes('PM'))) {
+                slot = 'FULL';
+              } else if (upperService.includes('AM') || upperService.includes('MATTINA')) {
+                slot = 'AM';
+              } else {
+                const rawSlot = (row['Slot'] || row['SLOT'] || '').toString().toUpperCase();
+                if (rawSlot.includes('FULL') || rawSlot.includes('+')) slot = 'FULL';
+                else if (rawSlot.includes('PM') || rawSlot.includes('CENA')) slot = 'PM';
+              }
+
+              const pax = parseInt(row['PAX'] || row['Pax'] || row['Partecipanti'] || 25) || 25;
+
+              let dateStr = rawDate;
+              if (typeof rawDate === 'number') {
+                const parsedDate = XLSX.SSF.parse_date_code(rawDate);
+                if (parsedDate && parsedDate.y) {
+                  dateStr = `${parsedDate.y}-${String(parsedDate.m).padStart(2,'0')}-${String(parsedDate.d).padStart(2,'0')}`;
+                }
+              } else if (typeof rawDate === 'string' && rawDate.includes('/')) {
+                const parts = rawDate.split('/');
+                if (parts.length === 3) {
+                  const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+                  dateStr = `${year}-${String(parts[1]).padStart(2,'0')}-${String(parts[0]).padStart(2,'0')}`;
+                }
+              } else if (typeof rawDate === 'string' && rawDate.length >= 10) {
+                dateStr = rawDate.substring(0, 10);
+              }
+
+              if (!dateStr || dateStr.length !== 10 || !dateStr.includes('-')) {
+                dateStr = document.getElementById('alloc-date').value;
+              }
+
+              if (!TOUR_CODES.includes(groupCode)) TOUR_CODES.push(groupCode);
+
+              tours.push({
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+                date: dateStr,
+                slot: slot,
+                groupCode: groupCode,
+                service: service,
+                pax: pax,
+                guideId: '',
+                status: 'Scheduled'
+              });
+              addedCount++;
+            });
+
+            saveData();
+            populateDropdowns();
+            renderAllViews();
+            alert(`Importazione completata con successo! Caricati ${addedCount} servizi.`);
+          } catch (err) {
+            overlay.style.display = 'none';
+            console.error(err);
+            alert("Errore durante la lettura del file.");
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      }
     }
 
-    // --- INIZIALIZZAZIONE FIREBASE CON CONFIGURAZIONE UFFICIALE ---
+    // Processamento intelligente del testo estratto da Foto (OCR) o PDF
+    function processTextLines(fullText) {
+      const lines = fullText.split('\n');
+      let added = 0;
+      const defaultDate = document.getElementById('alloc-date').value;
+
+      lines.forEach(line => {
+        const clean = line.trim();
+        if (clean.length < 3) return;
+
+        let slot = 'AM';
+        const upper = clean.toUpperCase();
+        if (upper.includes('CENA') || upper.includes('PM') || upper.includes('POMERIGGIO')) slot = 'PM';
+        else if (upper.includes('FULL') || upper.includes('+')) slot = 'FULL';
+
+        // Cerca eventuale codice tour tra quelli noti o alfanumerici
+        let foundCode = 'M3A';
+        TOUR_CODES.forEach(code => {
+          if (upper.includes(code)) foundCode = code;
+        });
+
+        tours.push({
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+          date: defaultDate,
+          slot: slot,
+          groupCode: foundCode,
+          service: clean,
+          pax: 25,
+          guideId: '',
+          status: 'Scheduled'
+        });
+        added++;
+      });
+
+      saveData();
+      populateDropdowns();
+      renderAllViews();
+      alert(`Importazione da testo/foto completata! Rilevati ${added} elementi.`);
+    }
+
     function initFirebase() {
       const defaultFirebaseConfig = {
         apiKey: "AIzaSyA12BV8xs0glcCDJP1sKHAH5MJIrJS8AiM",
@@ -799,7 +911,7 @@
       const pax = parseInt(document.getElementById('alloc-pax').value) || 25;
       
       let neededGuides = 1;
-      if (serviceName.includes("+")) {
+      if (serviceName.includes("+") && !serviceName.includes("CENA")) {
         neededGuides = 1;
       } else if (serviceName.includes("VATICANO") || serviceName.includes("VAT")) {
         if (serviceName.includes("BASILICA") || serviceName.includes("CHOICE")) {
@@ -886,7 +998,6 @@
       return `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`;
     }
 
-    // --- CASCADING MONTHLY DISPATCHER RENDER (CON MODIFICA DIRETTA NEL TESTO) ---
     function renderMonthlyCascade() {
       const monthVal = document.getElementById('cascade-month-filter').value;
       const [year, month] = monthVal.split('-').map(Number);
@@ -937,7 +1048,7 @@
       }
 
       if (!hasAnyTourInMonth) {
-        container.innerHTML = `<div style="text-align:center; padding:30px; color:var(--text-muted);">Nessun tour programmato per il mese ${monthVal}. Carica un file Excel o aggiungi i turni manualmente.</div>`;
+        container.innerHTML = `<div style="text-align:center; padding:30px; color:var(--text-muted);">Nessun tour programmato per il mese ${monthVal}. Carica un file o usa il tasto di aggiunta rapida.</div>`;
       }
     }
 
@@ -1009,7 +1120,6 @@
       return tableHtml;
     }
 
-    // --- MODALE NON ASSEGNATI & CONFLITTI ---
     function openUnassignedModal() {
       const monthVal = document.getElementById('cascade-month-filter').value;
       const [year, month] = monthVal.split('-').map(Number);
@@ -1134,7 +1244,6 @@
       }, 150);
     }
 
-    // --- MAGIC SHUFFLE AGGIORNATO (SIMONE/CINZIA PRIVILEGIATI, STESSO GIORNO SIGLE UGUALI, COMPENSI EQUI) ---
     function runMagicShuffle() {
       if (!confirm("Vuoi eseguire l'assegnazione automatica Magic Shuffle per i turni del mese?")) return;
 
@@ -1150,10 +1259,9 @@
       let unassignedTours = tours.filter(t => !t.guideId && t.date);
       unassignedTours.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-      const privilegedCodes = ["LI", "LB", "LJ", "LR"];
+      const privilegedCodes = ["LI", "LB", "LJ", "LR", "M3A"];
 
       unassignedTours.forEach(t => {
-        // Regola dello stesso giorno: se c'è un turno PM (es. HIGH) con la stessa sigla del mattino (AM/VAT), prova a dare la precedenza alla guida del mattino
         if (t.slot === 'PM' || t.slot === 'FULL') {
           const morningMatch = tours.find(x => x.date === t.date && x.groupCode === t.groupCode && x.guideId && (x.slot === 'AM' || x.slot === 'FULL') && x.id !== t.id);
           if (morningMatch) {
@@ -1214,7 +1322,6 @@
       alert("Magic Shuffle completato con successo!");
     }
 
-    // --- CALENDAR MATCH & CONFLICTS ---
     function renderCalendarMatch() {
       const monthVal = document.getElementById('cal-month-input').value;
       const guideFilter = document.getElementById('cal-guide-filter').value;
@@ -1310,7 +1417,6 @@
       container.innerHTML = html;
     }
 
-    // --- INVIO WHATSAPP PULITO + FILE ICS AUTOMATICO ---
     function sendWhatsAppMonthlyScheduleAndICS() {
       const guideId = document.getElementById('single-guide-select').value;
       const guide = guides.find(g => g.id == guideId);
@@ -1425,7 +1531,6 @@
       if (t) { t.guideId = guideId ? parseInt(guideId) : ''; saveData(); renderMonthlyCascade(); }
     }
 
-    // --- TAB 2: MONTHLY REPORT FOLDER ---
     function renderMonthlyReport() {
       const monthVal = document.getElementById('report-month-input').value;
       const [year, month] = monthVal.split('-').map(Number);
@@ -1472,7 +1577,6 @@
       });
     }
 
-    // --- TAB 4: DISPONIBILITÀ MENSILE GUIDE ---
     function renderPlanner() {
       const monthVal = document.getElementById('planner-month').value;
       const [year, month] = monthVal.split('-').map(Number);
@@ -1517,7 +1621,6 @@
       saveData(); renderPlanner(); renderCalendarMatch();
     }
 
-    // --- TAB 5: COMPLETE ANAGRAFICA (ORDINATA ALFABETICAMENTE PER COGNOME) ---
     function renderAnagrafica() {
       const search = document.getElementById('search-guide-input').value.toLowerCase();
       const tbody = document.getElementById('anagrafica-table-body');
@@ -1602,7 +1705,6 @@
       switchTab('single-guide');
     }
 
-    // --- TAB 6: SINGLE GUIDE ---
     function renderSingleGuideView() {
       const guideId = document.getElementById('single-guide-select').value;
       const guide = guides.find(g => g.id == guideId); if (!guide) return;
@@ -1628,7 +1730,6 @@
       });
     }
 
-    // --- TAB 7: RESERVED ACCOUNT PANEL ---
     function renderAccountPanel() {
       let total = 0;
       tours.forEach(t => {
@@ -1663,7 +1764,6 @@
       });
     }
 
-    // --- MODALE DETTAGLIO CONTABILE GUIDA ---
     function openGuideAccountModal(guideId) {
       currentSelectedGuideIdForModal = guideId;
       const guide = guides.find(g => g.id == guideId);
