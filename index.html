@@ -63,6 +63,10 @@
     .btn-excel:hover { background-color: #15803d; }
     .btn-sm { padding: 4px 10px; font-size: 0.75rem; }
 
+    /* Switch Blocco Modifiche Planner */
+    .btn-lock-red { background-color: #ef4444 !important; color: white !important; font-weight: 700; }
+    .btn-lock-green { background-color: #10b981 !important; color: white !important; font-weight: 700; }
+
     .controls-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; }
     .form-group { display: flex; flex-direction: column; gap: 4px; }
     .form-group label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
@@ -107,8 +111,11 @@
     
     .holiday-th { background-color: var(--danger-light) !important; color: var(--danger) !important; }
 
-    .planner-cell { cursor: pointer; transition: background 0.15s; font-weight: 600; border-radius: 4px; }
-    .planner-cell:hover { opacity: 0.8; transform: scale(1.05); }
+    .planner-cell { transition: background 0.15s; font-weight: 600; border-radius: 4px; }
+    .planner-cell.editable { cursor: pointer; }
+    .planner-cell.editable:hover { opacity: 0.8; transform: scale(1.05); }
+    .planner-cell.locked { cursor: not-allowed; opacity: 0.85; }
+
     .cell-full { background-color: var(--success-light); color: var(--success); }
     .cell-am { background-color: var(--primary-light); color: var(--primary); }
     .cell-pm { background-color: var(--warning-light); color: var(--warning); }
@@ -328,16 +335,23 @@
       </div>
     </div>
 
-    <!-- TAB 4: MONTHLY AVAILABILITY MATRIX -->
+    <!-- TAB 4: MONTHLY AVAILABILITY MATRIX CON SWITCH DI SICUREZZA -->
     <div id="tab-planner" class="tab-content">
       <div class="card">
         <div class="card-title">
           <span>Disponibilità Mensile Guide (Domeniche e Festivi in Rosso)</span>
-          <input type="month" id="planner-month" class="form-control" value="2026-09" style="width:160px;" onchange="renderPlanner()">
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <input type="month" id="planner-month" class="form-control" value="2026-09" style="width:160px;" onchange="resetPlannerLockAndRender()">
+            
+            <!-- PULSANTE SWITCH SICUREZZA PER MODIFICHE -->
+            <button id="planner-lock-btn" class="btn btn-lock-red" onclick="togglePlannerEditMode()">
+              🔒 Modifiche Disattivate
+            </button>
+          </div>
         </div>
 
         <div style="margin-bottom: 12px; font-size: 0.8rem; display: flex; gap: 16px; align-items: center; color: var(--text-muted); flex-wrap: wrap;">
-          <span>Clicca sulle caselle per cambiare stato:</span>
+          <span id="planner-hint-text"><strong style="color:var(--danger);">Sblocca il pulsante in alto a destra per modificare le caselle.</strong></span>
           <span><strong style="color:var(--success);">FULL</strong> (AM+PM)</span>
           <span><strong style="color:var(--primary);">AM</strong> (Solo Mattina)</span>
           <span><strong style="color:var(--warning);">PM</strong> (Solo Pomeriggio)</span>
@@ -572,6 +586,9 @@
     let isFirebaseConnected = false;
     let currentSelectedGuideIdForModal = null;
 
+    // VARIABILE PER LO STATO DEL BLOCCO SICUREZZA PLANNER (Di default SEMPRE Bloccato)
+    let isPlannerUnlocked = false;
+
     function getTourFee(serviceName) {
       if (!serviceName) return 245.00;
       const upper = serviceName.toUpperCase();
@@ -626,7 +643,6 @@
       renderAccountPanel();
     }
 
-    // --- GESTORE UNIVERSALE DI IMPORTAZIONE (Excel, Numbers, CSV, PDF, Foto con OCR) ---
     function handleUniversalFileImport(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -679,7 +695,6 @@
         reader.readAsArrayBuffer(file);
 
       } else {
-        // Excel, Numbers, CSV
         loadText.textContent = "Elaborazione file foglio di calcolo...";
         overlay.style.display = 'flex';
 
@@ -772,7 +787,6 @@
       }
     }
 
-    // Processamento intelligente del testo estratto da Foto (OCR) o PDF
     function processTextLines(fullText) {
       const lines = fullText.split('\n');
       let added = 0;
@@ -787,7 +801,6 @@
         if (upper.includes('CENA') || upper.includes('PM') || upper.includes('POMERIGGIO')) slot = 'PM';
         else if (upper.includes('FULL') || upper.includes('+')) slot = 'FULL';
 
-        // Cerca eventuale codice tour tra quelli noti o alfanumerici
         let foundCode = 'M3A';
         TOUR_CODES.forEach(code => {
           if (upper.includes(code)) foundCode = code;
@@ -939,6 +952,7 @@
       return dayOfWeek === 0 || fixedHolidays.includes(dateString) || mobileHolidays.includes(dateString);
     }
 
+    // REGOLA RICHIESTA: QUANDO CAMBI SCHEDA, IL BLOCCO DEVE RITORNARE AUTOMATICAMENTE ROSSO
     function switchTab(tabId) {
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
@@ -946,6 +960,10 @@
       const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
       if (btn) btn.classList.add('active');
       document.getElementById(`tab-${tabId}`).classList.add('active');
+
+      // Ripristina il blocco sicurezza su ROSSO ogni volta che cambi scheda
+      isPlannerUnlocked = false;
+      updatePlannerLockButtonUI();
 
       if (tabId === 'allocator') renderMonthlyCascade();
       if (tabId === 'monthly-report') renderMonthlyReport();
@@ -1577,6 +1595,36 @@
       });
     }
 
+    // --- LOGICA INTERRUTTORE DI SICUREZZA PER DISPONIBILITÀ ---
+    function togglePlannerEditMode() {
+      isPlannerUnlocked = !isPlannerUnlocked;
+      updatePlannerLockButtonUI();
+      renderPlanner();
+    }
+
+    function resetPlannerLockAndRender() {
+      isPlannerUnlocked = false;
+      updatePlannerLockButtonUI();
+      renderPlanner();
+    }
+
+    function updatePlannerLockButtonUI() {
+      const btn = document.getElementById('planner-lock-btn');
+      const hint = document.getElementById('planner-hint-text');
+
+      if (!btn) return;
+
+      if (isPlannerUnlocked) {
+        btn.className = 'btn btn-lock-green';
+        btn.innerHTML = '🔓 Modifiche Attive';
+        if (hint) hint.innerHTML = '<strong style="color:var(--success);">Puoi toccare/cliccare sulle caselle per cambiare disponibilità.</strong>';
+      } else {
+        btn.className = 'btn btn-lock-red';
+        btn.innerHTML = '🔒 Modifiche Disattivate';
+        if (hint) hint.innerHTML = '<strong style="color:var(--danger);">Sblocca il pulsante in alto a destra per modificare le caselle.</strong>';
+      }
+    }
+
     function renderPlanner() {
       const monthVal = document.getElementById('planner-month').value;
       const [year, month] = monthVal.split('-').map(Number);
@@ -1603,6 +1651,12 @@
           else if (avail === 'PM') { cellClass = 'planner-cell cell-pm'; cellText = 'PM'; }
           else if (avail === 'OFF') { cellClass = 'planner-cell cell-off'; cellText = 'OFF'; }
 
+          if (isPlannerUnlocked) {
+            cellClass += ' editable';
+          } else {
+            cellClass += ' locked';
+          }
+
           tbody += `<td class="${cellClass}" onclick="cycleAvailability(${g.id}, '${dateStr}')">${cellText}</td>`;
         }
         tbody += '</tr>';
@@ -1612,6 +1666,11 @@
     }
 
     function cycleAvailability(guideId, dateStr) {
+      if (!isPlannerUnlocked) {
+        // Se è bloccato (Rosso), ignoriamo qualsiasi tocco accidentale
+        return;
+      }
+
       const key = `${guideId}_${dateStr}`;
       const current = availabilities[key] || 'FULL';
       const order = ['FULL', 'AM', 'PM', 'OFF'];
