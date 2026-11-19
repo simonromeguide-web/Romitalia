@@ -85,6 +85,11 @@
     td { padding: 10px 12px; border-bottom: 1px solid var(--border-color); color: var(--text-main); vertical-align: middle; white-space: nowrap; }
     tr:hover td { background-color: var(--bg-main); }
 
+    .month-cell-box { display: flex; flex-direction: column; gap: 2px; line-height: 1.25; }
+    .month-tour-count { font-size: 0.72rem; color: var(--text-muted); font-weight: 600; }
+    .month-tour-earning { font-size: 0.82rem; color: var(--text-main); font-weight: 700; }
+    .summary-total-col { background-color: #f8fafc; font-weight: 700; }
+
     .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
     .badge-available { background-color: var(--success-light); color: var(--success); }
     .badge-busy { background-color: var(--primary-light); color: var(--primary); }
@@ -227,7 +232,7 @@
     <datalist id="group-list"></datalist>
     <datalist id="service-list"></datalist>
 
-    <input type="file" id="universal-file-input" accept=".xlsx, .xls, .csv, .numbers, application/vnd.apple.numbers, .pdf, image/*" style="display: none;" onchange="handleUniversalFileImport(event)">
+    <input type="file" id="universal-file-input" accept=".xlsx, .xls, .csv, .numbers, application/vnd.apple.numbers, .pdf, image/*" style="display: none;" onclick="this.value=''" onchange="handleUniversalFileImport(event)">
 
     <!-- Navigation Tabs -->
     <div class="nav-tabs">
@@ -246,7 +251,7 @@
         <div class="card-title">
           <span>Gestione Turni e Dispacciamento a Cascata (Tutto il Mese - Modifica Diretta Attiva)</span>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <input type="month" id="cascade-month-filter" class="form-control" style="width: 150px;" onchange="renderMonthlyCascade()">
+            <input type="month" id="cascade-month-filter" class="form-control" style="width: 150px;" onchange="setGlobalMonth(this.value)">
             <button class="btn btn-excel" onclick="document.getElementById('universal-file-input').click()">📂 Carica File / PDF / Foto (OCR)</button>
           </div>
         </div>
@@ -255,7 +260,7 @@
           <div style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
             <div class="form-group" style="width: 150px;">
               <label>Data Turno</label>
-              <input type="date" id="alloc-date" class="form-control">
+              <input type="date" id="alloc-date" class="form-control" onchange="syncGlobalMonthFromDate(this.value)">
             </div>
             <div class="form-group" style="width: 180px;">
               <label>Tour (es. LI, M3A)</label>
@@ -305,7 +310,7 @@
         <div class="card-title">
           <span>📁 Cartella Riepilogo Mensile Servizi</span>
           <div style="display: flex; gap: 10px; align-items: center;">
-            <input type="month" id="report-month-input" class="form-control" style="width: 160px;" onchange="renderMonthlyReport()">
+            <input type="month" id="report-month-input" class="form-control" style="width: 160px;" onchange="setGlobalMonth(this.value)">
             <button class="btn btn-secondary" onclick="window.print()">Stampa Riepilogo Mensile</button>
           </div>
         </div>
@@ -341,7 +346,7 @@
         <div class="card-title">
           <span>🗓️ Calendario Match Disponibilità e Risposte Negative Guide</span>
           <div style="display: flex; gap: 10px; align-items: center;">
-            <input type="month" id="cal-month-input" class="form-control" style="width:160px;" onchange="renderCalendarMatch()">
+            <input type="month" id="cal-month-input" class="form-control" style="width:160px;" onchange="setGlobalMonth(this.value)">
             <select id="cal-guide-filter" class="form-control" style="width:200px;" onchange="renderCalendarMatch()">
               <option value="">Tutte le Guide</option>
             </select>
@@ -364,7 +369,7 @@
         <div class="card-title">
           <span>Disponibilità Mensile Guide (Domeniche e Festivi in Rosso)</span>
           <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <input type="month" id="planner-month" class="form-control" style="width:160px;" onchange="resetPlannerLockAndRender()">
+            <input type="month" id="planner-month" class="form-control" style="width:160px;" onchange="setGlobalMonth(this.value, true)">
             <button id="planner-lock-btn" class="btn btn-lock-red" onclick="togglePlannerEditMode()">
               🔒 Modifiche Disattivate
             </button>
@@ -373,10 +378,11 @@
 
         <div style="margin-bottom: 12px; font-size: 0.8rem; display: flex; gap: 16px; align-items: center; color: var(--text-muted); flex-wrap: wrap;">
           <span id="planner-hint-text"><strong style="color:var(--danger);">Sblocca il pulsante in alto a destra per modificare le caselle.</strong></span>
+          <span>Sequenza click: <strong>FULL → OFF → AM → PM</strong></span>
           <span><strong style="color:var(--success);">FULL</strong> (AM+PM)</span>
+          <span><strong style="color:var(--danger);">OFF</strong> (Non Disponibile)</span>
           <span><strong style="color:var(--primary);">AM</strong> (Solo Mattina)</span>
           <span><strong style="color:var(--warning);">PM</strong> (Solo Pomeriggio)</span>
-          <span><strong style="color:var(--danger);">OFF</strong> (Non Disponibile)</span>
         </div>
 
         <div class="table-responsive">
@@ -437,7 +443,7 @@
           <span>Riepilogo Programma Turni</span>
           <div class="form-group" style="width: 160px; margin-bottom: 0;">
             <label>Filtra Mese Visualizzazione</label>
-            <input type="month" id="sg-month-filter" class="form-control" onchange="renderSingleGuideView()">
+            <input type="month" id="sg-month-filter" class="form-control" onchange="setGlobalMonth(this.value)">
           </div>
         </div>
         <div class="table-responsive">
@@ -456,7 +462,10 @@
       <div class="card" style="border-top: 4px solid var(--primary);">
         <div class="card-title">
           <span>🔒 Pannello Riservato Contabilità & Guadagni (Clicca sul nome guida per il dettaglio)</span>
-          <button class="btn btn-secondary btn-sm" onclick="exportAccountingCSV()">Esporta Report Finanziario CSV</button>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <input type="month" id="acc-month-filter" class="form-control" style="width: 160px;" onchange="setGlobalMonth(this.value)">
+            <button class="btn btn-secondary btn-sm" onclick="exportAccountingCSV()">Esporta Report Finanziario CSV</button>
+          </div>
         </div>
 
         <div class="metrics-grid">
@@ -467,10 +476,26 @@
           <table>
             <thead>
               <tr>
-                <th>Nome Guida</th><th>Telefono</th><th>Totale Tour</th><th>Mese (€)</th><th>Q1 (€)</th><th>Q2 (€)</th><th>Q3 (€)</th><th>Q4 (€)</th><th>Annuale (€)</th>
+                <th>Nome Guida</th>
+                <th>Telefono</th>
+                <th>Gen</th>
+                <th>Feb</th>
+                <th>Mar</th>
+                <th>Apr</th>
+                <th>Mag</th>
+                <th>Giu</th>
+                <th>Lug</th>
+                <th>Ago</th>
+                <th>Set</th>
+                <th>Ott</th>
+                <th>Nov</th>
+                <th>Dic</th>
+                <th>Totale Tour</th>
+                <th>Totale Guadagni</th>
               </tr>
             </thead>
             <tbody id="accounting-table-body"></tbody>
+            <tfoot id="accounting-table-foot"></tfoot>
           </table>
         </div>
       </div>
@@ -502,7 +527,7 @@
         <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
           <div class="form-group" style="width: 180px; margin-bottom: 0;">
             <label>Filtra per Mese</label>
-            <input type="month" id="gam-month-filter" class="form-control" onchange="renderGuideAccountModalContent()">
+            <input type="month" id="gam-month-filter" class="form-control" onchange="setGlobalMonth(this.value)">
           </div>
           <div style="display: flex; gap: 8px;">
             <button class="btn btn-excel btn-sm" onclick="exportSingleGuideAccountCSV()">📥 Scarica</button>
@@ -598,8 +623,20 @@
     let tours = JSON.parse(localStorage.getItem('tg_tours')) || DEFAULT_TOURS;
     let availabilities = JSON.parse(localStorage.getItem('tg_availabilities')) || DEFAULT_AVAILABILITIES;
 
+    const MONTH_INPUT_IDS = [
+      'cascade-month-filter',
+      'report-month-input',
+      'cal-month-input',
+      'planner-month',
+      'sg-month-filter',
+      'acc-month-filter',
+      'gam-month-filter'
+    ];
+
+    let activeGlobalMonth = localStorage.getItem('tg_active_month') || getCurrentDateParts().monthStr;
     let dbRef = null;
     let isFirebaseConnected = false;
+    let isSavingToFirebase = false;
     let currentSelectedGuideIdForModal = null;
     let isPlannerUnlocked = false;
 
@@ -701,23 +738,57 @@
       };
     }
 
-    function setCalendarsToCurrentDate() {
-      const { monthStr, dateStr } = getCurrentDateParts();
-      const monthInputs = [
-        'cascade-month-filter',
-        'report-month-input',
-        'cal-month-input',
-        'planner-month',
-        'sg-month-filter',
-        'gam-month-filter'
-      ];
-      monthInputs.forEach(id => {
+    function applyMonthToAllInputs(monthStr) {
+      if (!monthStr || !/^\d{4}-\d{2}$/.test(monthStr)) return;
+      activeGlobalMonth = monthStr;
+      localStorage.setItem('tg_active_month', activeGlobalMonth);
+
+      MONTH_INPUT_IDS.forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.value = monthStr;
+        if (el && el.value !== activeGlobalMonth) {
+          el.value = activeGlobalMonth;
+        }
       });
 
       const allocDate = document.getElementById('alloc-date');
-      if (allocDate) allocDate.value = dateStr;
+      if (allocDate && (!allocDate.value || !allocDate.value.startsWith(activeGlobalMonth + '-'))) {
+        const todayParts = getCurrentDateParts();
+        if (todayParts.monthStr === activeGlobalMonth) {
+          allocDate.value = todayParts.dateStr;
+        } else {
+          allocDate.value = `${activeGlobalMonth}-01`;
+        }
+      }
+    }
+
+    function setGlobalMonth(monthStr, lockPlanner = false) {
+      if (!monthStr || !/^\d{4}-\d{2}$/.test(monthStr)) return;
+      applyMonthToAllInputs(monthStr);
+      if (lockPlanner) {
+        isPlannerUnlocked = false;
+        updatePlannerLockButtonUI();
+      }
+      renderAllViews();
+    }
+
+    function syncGlobalMonthFromDate(dateStr) {
+      if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return;
+      const monthFromDate = dateStr.substring(0, 7);
+      if (monthFromDate !== activeGlobalMonth) {
+        applyMonthToAllInputs(monthFromDate);
+        renderAllViews();
+      }
+    }
+
+    function setCalendarsToCurrentDate() {
+      const { monthStr, dateStr } = getCurrentDateParts();
+      const initialMonth = (activeGlobalMonth && /^\d{4}-\d{2}$/.test(activeGlobalMonth)) ? activeGlobalMonth : monthStr;
+      applyMonthToAllInputs(initialMonth);
+
+      const allocDate = document.getElementById('alloc-date');
+      if (allocDate && !allocDate.value) {
+        allocDate.value = initialMonth === monthStr ? dateStr : `${initialMonth}-01`;
+      }
     }
 
     function getWeekdayIt(dateStr) {
@@ -832,6 +903,7 @@
     }
 
     function renderAllViewsExceptCascade() {
+      applyMonthToAllInputs(activeGlobalMonth);
       renderMonthlyReport();
       renderCalendarMatch();
       renderPlanner();
@@ -840,9 +912,47 @@
       renderAccountPanel();
     }
 
+    function parseImportedDate(rawDate, fallbackMonthStr, fallbackDateStr) {
+      if (typeof rawDate === 'number') {
+        const parsedDate = XLSX.SSF.parse_date_code(rawDate);
+        if (parsedDate && parsedDate.y && parsedDate.m && parsedDate.d) {
+          return `${parsedDate.y}-${String(parsedDate.m).padStart(2,'0')}-${String(parsedDate.d).padStart(2,'0')}`;
+        }
+      }
+
+      if (typeof rawDate === 'string') {
+        const trimmed = rawDate.trim();
+        if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
+          return trimmed.substring(0, 10);
+        }
+        if (/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}$/.test(trimmed)) {
+          const sep = trimmed.includes('/') ? '/' : '-';
+          const parts = trimmed.split(sep);
+          const day = String(parts[0]).padStart(2, '0');
+          const month = String(parts[1]).padStart(2, '0');
+          const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+          return `${year}-${month}-${day}`;
+        }
+        if (/^\d{1,2}$/.test(trimmed) && fallbackMonthStr) {
+          const day = String(parseInt(trimmed, 10)).padStart(2, '0');
+          return `${fallbackMonthStr}-${day}`;
+        }
+      }
+
+      if (fallbackDateStr && fallbackDateStr.startsWith(fallbackMonthStr + '-')) {
+        return fallbackDateStr;
+      }
+      return `${fallbackMonthStr}-01`;
+    }
+
     function handleUniversalFileImport(event) {
       const file = event.target.files[0];
       if (!file) return;
+
+      const activeMonth = getActiveMonthFilter();
+      const defaultDateForMonth = (document.getElementById('alloc-date').value || '').startsWith(activeMonth + '-')
+        ? document.getElementById('alloc-date').value
+        : `${activeMonth}-01`;
 
       const fileType = file.type;
       const fileName = file.name.toLowerCase();
@@ -860,7 +970,7 @@
           { logger: m => console.log(m) }
         ).then(({ data: { text } }) => {
           overlay.style.display = 'none';
-          processTextLines(text);
+          processTextLines(text, defaultDateForMonth);
         }).catch(err => {
           overlay.style.display = 'none';
           console.error(err);
@@ -882,7 +992,7 @@
               allText += XLSX.utils.sheet_to_csv(worksheet) + "\n";
             });
             overlay.style.display = 'none';
-            processTextLines(allText);
+            processTextLines(allText, defaultDateForMonth);
           } catch (err) {
             overlay.style.display = 'none';
             console.error(err);
@@ -912,9 +1022,9 @@
 
             let addedCount = 0;
             jsonData.forEach(row => {
-              const rawDate = row['SERVICE DATE'] || row['Data'] || row['DATA'] || row['date'] || document.getElementById('alloc-date').value;
-              const groupCode = (row['TOUR'] || row['Gruppo'] || row['Codice Gruppo'] || row['Tour'] || 'GENERICO').toString().trim();
-              const service = (row['SERVICE REMARK'] || row['Service Remark'] || row['Servizio'] || row['Tour'] || 'Servizio Generico').toString().trim();
+              const rawDate = row['SERVICE DATE'] || row['Data'] || row['DATA'] || row['date'] || row['Giorno'] || '';
+              const groupCode = (row['TOUR'] || row['Gruppo'] || row['Codice Gruppo'] || row['Tour'] || 'GENERICO').toString().trim() || 'GENERICO';
+              const service = (row['SERVICE REMARK'] || row['Service Remark'] || row['Servizio'] || row['Tour'] || 'Servizio Generico').toString().trim() || 'Servizio Generico';
               
               let slot = 'AM';
               const upperService = service.toUpperCase();
@@ -936,31 +1046,12 @@
               }
 
               const pax = parseInt(row['PAX'] || row['Pax'] || row['Partecipanti'] || 25) || 25;
-
-              let dateStr = rawDate;
-              if (typeof rawDate === 'number') {
-                const parsedDate = XLSX.SSF.parse_date_code(rawDate);
-                if (parsedDate && parsedDate.y) {
-                  dateStr = `${parsedDate.y}-${String(parsedDate.m).padStart(2,'0')}-${String(parsedDate.d).padStart(2,'0')}`;
-                }
-              } else if (typeof rawDate === 'string' && rawDate.includes('/')) {
-                const parts = rawDate.split('/');
-                if (parts.length === 3) {
-                  const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
-                  dateStr = `${year}-${String(parts[1]).padStart(2,'0')}-${String(parts[0]).padStart(2,'0')}`;
-                }
-              } else if (typeof rawDate === 'string' && rawDate.length >= 10) {
-                dateStr = rawDate.substring(0, 10);
-              }
-
-              if (!dateStr || dateStr.length !== 10 || !dateStr.includes('-')) {
-                dateStr = document.getElementById('alloc-date').value;
-              }
+              const dateStr = parseImportedDate(rawDate, activeMonth, defaultDateForMonth);
 
               if (!TOUR_CODES.includes(groupCode)) TOUR_CODES.push(groupCode);
 
               tours.push({
-                id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 6),
                 date: dateStr,
                 slot: slot,
                 groupCode: groupCode,
@@ -987,10 +1078,10 @@
       event.target.value = '';
     }
 
-    function processTextLines(fullText) {
+    function processTextLines(fullText, fallbackDate) {
       const lines = fullText.split('\n');
       let added = 0;
-      const defaultDate = document.getElementById('alloc-date').value;
+      const defaultDate = fallbackDate || document.getElementById('alloc-date').value;
 
       lines.forEach(line => {
         const clean = line.trim();
@@ -1008,7 +1099,7 @@
         });
 
         tours.push({
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 6),
           date: defaultDate,
           slot: slot,
           groupCode: foundCode,
@@ -1052,10 +1143,11 @@
         document.getElementById('fb-projectId').value = savedConfig.projectId || '';
 
         dbRef.on('value', (snapshot) => {
+          if (isSavingToFirebase) return;
           const data = snapshot.val();
           if (data) {
             guides = data.guides || guides;
-            tours = data.tours || tours;
+            tours = Array.isArray(data.tours) ? data.tours : tours;
             availabilities = data.availabilities || availabilities;
             
             localStorage.setItem('tg_guides', JSON.stringify(guides));
@@ -1104,24 +1196,29 @@
       localStorage.setItem('tg_availabilities', JSON.stringify(availabilities));
 
       if (isFirebaseConnected && dbRef) {
+        isSavingToFirebase = true;
         dbRef.set({
           guides: guides,
           tours: tours,
           availabilities: availabilities
+        }, () => {
+          setTimeout(() => { isSavingToFirebase = false; }, 150);
         });
       }
     }
 
     function getActiveMonthFilter() {
+      if (activeGlobalMonth && /^\d{4}-\d{2}$/.test(activeGlobalMonth)) {
+        return activeGlobalMonth;
+      }
       const el = document.getElementById('cascade-month-filter');
       return (el && el.value) ? el.value : getCurrentDateParts().monthStr;
     }
 
-    // RESET SOLO DELLE ASSEGNAZIONI DEL MESE SELEZIONATO (NO TOUR CARICATI, NO DISPONIBILITÀ GUIDE)
     function resetAssignmentsOnly(silent = false) {
       const monthVal = getActiveMonthFilter();
       if (!silent) {
-        if (!confirm(`Vuoi azzerare solo le assegnazioni delle guide per il mese ${monthVal}? I tour caricati e le disponibilità delle guide resteranno invariati.`)) {
+        if (!confirm(`Vuoi azzerare solo la selezione guida dei turni del mese ${monthVal}? I tour caricati e le disponibilità delle guide resteranno invariati.`)) {
           return false;
         }
       }
@@ -1135,7 +1232,7 @@
       saveData();
       renderAllViews();
       if (!silent) {
-        alert(`Assegnazioni del mese ${monthVal} azzerate. Tour e disponibilità guide mantenuti.`);
+        alert(`Selezione guida azzerata per il mese ${monthVal}. Tutti i tour caricati e le disponibilità sono rimasti intatti.`);
       }
       return true;
     }
@@ -1175,9 +1272,12 @@
       const fixedHolidays = [
         "2026-01-01", "2026-01-06", "2026-04-25", "2026-05-01", 
         "2026-06-02", "2026-06-29", "2026-08-15", "2026-11-01", 
-        "2026-12-08", "2026-12-25", "2026-12-26"
+        "2026-12-08", "2026-12-25", "2026-12-26",
+        "2027-01-01", "2027-01-06", "2027-04-25", "2027-05-01",
+        "2027-06-02", "2027-06-29", "2027-08-15", "2027-11-01",
+        "2027-12-08", "2027-12-25", "2027-12-26"
       ];
-      const mobileHolidays = ["2026-04-05", "2026-04-06"];
+      const mobileHolidays = ["2026-04-05", "2026-04-06", "2027-03-28", "2027-03-29"];
 
       return dayOfWeek === 0 || fixedHolidays.includes(dateString) || mobileHolidays.includes(dateString);
     }
@@ -1192,6 +1292,7 @@
 
       isPlannerUnlocked = false;
       updatePlannerLockButtonUI();
+      applyMonthToAllInputs(activeGlobalMonth);
 
       if (tabId === 'allocator') renderMonthlyCascade();
       if (tabId === 'monthly-report') renderMonthlyReport();
@@ -1475,8 +1576,7 @@
       switchTab('allocator');
 
       const [year, month] = dateStr.split('-');
-      document.getElementById('cascade-month-filter').value = `${year}-${month}`;
-      renderMonthlyCascade();
+      setGlobalMonth(`${year}-${month}`);
 
       setTimeout(() => {
         const dayBox = document.getElementById(`cascade-day-${dateStr}`);
@@ -1507,7 +1607,6 @@
       return !isBusy;
     }
 
-    // MAGIC SHUFFLE SOLO PER IL MESE SELEZIONATO (RESET SOLO SULLE ASSEGNAZIONI, MAI SU TOUR O DISPONIBILITÀ)
     function runMagicShuffle() {
       const monthVal = getActiveMonthFilter();
       const hasAssignedInMonth = tours.some(t => t.date && t.date.startsWith(monthVal + '-') && t.status !== 'Cancelled' && t.guideId);
@@ -1621,7 +1720,7 @@
     }
 
     function renderCalendarMatch() {
-      const monthVal = document.getElementById('cal-month-input').value;
+      const monthVal = getActiveMonthFilter();
       const guideFilter = document.getElementById('cal-guide-filter').value;
       const [year, month] = monthVal.split('-').map(Number);
 
@@ -1718,7 +1817,7 @@
     function sendWhatsAppMonthlyScheduleAndICS() {
       const guideId = document.getElementById('single-guide-select').value;
       const guide = guides.find(g => g.id == guideId);
-      const monthVal = document.getElementById('sg-month-filter').value;
+      const monthVal = getActiveMonthFilter();
 
       if (!guide) { alert("Seleziona una guida."); return; }
       if (!guide.phone) {
@@ -1809,15 +1908,19 @@
       const pax = parseInt(document.getElementById('alloc-pax').value) || 25;
       const qty = parseInt(document.getElementById('alloc-qty').value) || 1;
 
+      if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        applyMonthToAllInputs(date.substring(0, 7));
+      }
+
       for (let i = 0; i < qty; i++) {
         tours.push({
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 6),
           date, slot, groupCode, service, pax, guideId: '', status: 'Scheduled'
         });
       }
 
       saveData();
-      renderMonthlyCascade();
+      renderAllViews();
 
       groupInput.value = '';
       serviceInput.value = '';
@@ -1831,7 +1934,7 @@
     }
 
     function renderMonthlyReport() {
-      const monthVal = document.getElementById('report-month-input').value;
+      const monthVal = getActiveMonthFilter();
       const [year, month] = monthVal.split('-').map(Number);
 
       const monthTours = tours.filter(t => {
@@ -1899,7 +2002,7 @@
       if (isPlannerUnlocked) {
         btn.className = 'btn btn-lock-green';
         btn.innerHTML = '🔓 Modifiche Attive';
-        if (hint) hint.innerHTML = '<strong style="color:var(--success);">Puoi toccare/cliccare sulle caselle per cambiare disponibilità.</strong>';
+        if (hint) hint.innerHTML = '<strong style="color:var(--success);">Puoi toccare/cliccare sulle caselle per cambiare disponibilità (FULL → OFF → AM → PM).</strong>';
       } else {
         btn.className = 'btn btn-lock-red';
         btn.innerHTML = '🔒 Modifiche Disattivate';
@@ -1908,7 +2011,7 @@
     }
 
     function renderPlanner() {
-      const monthVal = document.getElementById('planner-month').value;
+      const monthVal = getActiveMonthFilter();
       const [year, month] = monthVal.split('-').map(Number);
       const daysInMonth = new Date(year, month, 0).getDate();
 
@@ -1952,7 +2055,7 @@
 
       const key = `${guideId}_${dateStr}`;
       const current = availabilities[key] || 'FULL';
-      const order = ['FULL', 'AM', 'PM', 'OFF'];
+      const order = ['FULL', 'OFF', 'AM', 'PM'];
       const next = order[(order.indexOf(current) + 1) % order.length];
       
       availabilities[key] = next;
@@ -2046,7 +2149,7 @@
     function renderSingleGuideView() {
       const guideId = document.getElementById('single-guide-select').value;
       const guide = guides.find(g => g.id == guideId); if (!guide) return;
-      const monthVal = document.getElementById('sg-month-filter').value;
+      const monthVal = getActiveMonthFilter();
       const [year, month] = monthVal.split('-').map(Number);
 
       let gTours = tours.filter(t => {
@@ -2069,40 +2172,94 @@
     }
 
     function renderAccountPanel() {
-      const { monthNum } = getCurrentDateParts();
-      const targetMonthIndex = monthNum - 1;
-      let total = 0;
-      tours.forEach(t => {
-        total += getTourFee(t.service);
-      });
+      const [selYear] = getActiveMonthFilter().split('-').map(Number);
 
-      document.getElementById('acc-total-payout').textContent = `€${total.toFixed(2)}`;
+      let totalAgencyPayout = 0;
+      let grandTotalTours = 0;
+      const monthColTotals = Array.from({ length: 12 }, () => ({ tours: 0, fee: 0 }));
 
-      const tbody = document.getElementById('accounting-table-body'); tbody.innerHTML = '';
+      const tbody = document.getElementById('accounting-table-body');
+      const tfoot = document.getElementById('accounting-table-foot');
+      tbody.innerHTML = '';
+      tfoot.innerHTML = '';
+
       guides.forEach(g => {
-        const gTours = tours.filter(t => t.guideId == g.id && t.date && t.status !== 'Cancelled');
-        const totalServiceCount = gTours.reduce((count, t) => count + getTourAccountingBreakdown(t.service).length, 0);
-        const m = gTours.filter(t => new Date(t.date).getMonth() === targetMonthIndex).reduce((s,t) => s + getTourFee(t.service), 0);
-        const q1 = gTours.filter(t => [0,1,2].includes(new Date(t.date).getMonth())).reduce((s,t) => s + getTourFee(t.service), 0);
-        const q2 = gTours.filter(t => [3,4,5].includes(new Date(t.date).getMonth())).reduce((s,t) => s + getTourFee(t.service), 0);
-        const q3 = gTours.filter(t => [6,7,8].includes(new Date(t.date).getMonth())).reduce((s,t) => s + getTourFee(t.service), 0);
-        const q4 = gTours.filter(t => [9,10,11].includes(new Date(t.date).getMonth())).reduce((s,t) => s + getTourFee(t.service), 0);
-        const yr = gTours.reduce((s,t) => s + getTourFee(t.service), 0);
+        const gTours = tours.filter(t => {
+          if (t.guideId != g.id || !t.date || t.status === 'Cancelled') return false;
+          const [ty] = t.date.split('-').map(Number);
+          return ty === selYear;
+        });
+
+        const perMonth = Array.from({ length: 12 }, () => ({ tours: 0, fee: 0 }));
+        let guideYearTours = 0;
+        let guideYearFee = 0;
+
+        gTours.forEach(t => {
+          const [, tm] = t.date.split('-').map(Number);
+          const mIdx = tm - 1;
+          if (mIdx >= 0 && mIdx < 12) {
+            const parts = getTourAccountingBreakdown(t.service);
+            const tCount = parts.length;
+            const tFee = parts.reduce((sum, p) => sum + p.fee, 0);
+
+            perMonth[mIdx].tours += tCount;
+            perMonth[mIdx].fee += tFee;
+
+            monthColTotals[mIdx].tours += tCount;
+            monthColTotals[mIdx].fee += tFee;
+
+            guideYearTours += tCount;
+            guideYearFee += tFee;
+            totalAgencyPayout += tFee;
+            grandTotalTours += tCount;
+          }
+        });
+
+        let monthCellsHtml = '';
+        for (let m = 0; m < 12; m++) {
+          monthCellsHtml += `
+            <td>
+              <div class="month-cell-box">
+                <span class="month-tour-count">${perMonth[m].tours} tour</span>
+                <span class="month-tour-earning">€${perMonth[m].fee.toFixed(2)}</span>
+              </div>
+            </td>
+          `;
+        }
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><strong style="color:var(--primary); cursor:pointer; text-decoration:underline;" onclick="openGuideAccountModal(${g.id})">${g.name}</strong></td>
-          <td>${g.phone||'-'}</td>
-          <td>${totalServiceCount}</td>
-          <td>€${m.toFixed(2)}</td>
-          <td>€${q1.toFixed(2)}</td>
-          <td>€${q2.toFixed(2)}</td>
-          <td>€${q3.toFixed(2)}</td>
-          <td>€${q4.toFixed(2)}</td>
-          <td><strong>€${yr.toFixed(2)}</strong></td>
+          <td>${g.phone || '-'}</td>
+          ${monthCellsHtml}
+          <td class="summary-total-col"><strong>${guideYearTours}</strong></td>
+          <td class="summary-total-col" style="color:var(--primary);"><strong>€${guideYearFee.toFixed(2)}</strong></td>
         `;
         tbody.appendChild(tr);
       });
+
+      document.getElementById('acc-total-payout').textContent = `€${totalAgencyPayout.toFixed(2)}`;
+
+      let footMonthsHtml = '';
+      for (let m = 0; m < 12; m++) {
+        footMonthsHtml += `
+          <td>
+            <div class="month-cell-box">
+              <span class="month-tour-count">${monthColTotals[m].tours} tour</span>
+              <span class="month-tour-earning">€${monthColTotals[m].fee.toFixed(2)}</span>
+            </div>
+          </td>
+        `;
+      }
+
+      tfoot.innerHTML = `
+        <tr style="background: var(--bg-main); font-weight: 700; border-top: 2px solid var(--border-color);">
+          <td colspan="2" style="text-align: right;">Totali Generali (${selYear}):</td>
+          ${footMonthsHtml}
+          <td class="summary-total-col"><strong>${grandTotalTours}</strong></td>
+          <td class="summary-total-col" style="color:var(--primary); font-size:0.95rem;"><strong>€${totalAgencyPayout.toFixed(2)}</strong></td>
+        </tr>
+      `;
     }
 
     function openGuideAccountModal(guideId) {
@@ -2110,6 +2267,7 @@
       const guide = guides.find(g => g.id == guideId);
       if (!guide) return;
 
+      applyMonthToAllInputs(activeGlobalMonth);
       document.getElementById('gam-title').textContent = `Dettaglio Tour & Pagamenti: ${guide.name}`;
       renderGuideAccountModalContent();
       document.getElementById('guide-account-modal').classList.add('active');
@@ -2121,7 +2279,7 @@
 
     function renderGuideAccountModalContent() {
       if (!currentSelectedGuideIdForModal) return;
-      const monthVal = document.getElementById('gam-month-filter').value;
+      const monthVal = getActiveMonthFilter();
       const [year, month] = monthVal.split('-').map(Number);
 
       const entries = getGuideAccountingEntriesForMonth(currentSelectedGuideIdForModal, year, month);
@@ -2162,7 +2320,7 @@
     function exportSingleGuideAccountCSV() {
       if (!currentSelectedGuideIdForModal) return;
       const guide = guides.find(g => g.id == currentSelectedGuideIdForModal);
-      const monthVal = document.getElementById('gam-month-filter').value;
+      const monthVal = getActiveMonthFilter();
       const [year, month] = monthVal.split('-').map(Number);
 
       const entries = getGuideAccountingEntriesForMonth(currentSelectedGuideIdForModal, year, month);
@@ -2185,16 +2343,52 @@
     }
 
     function exportAccountingCSV() {
-      let csv = "data:text/csv;charset=utf-8,Nome Guida,Telefono,Totale Tour,Guadagno Annuale\n";
-      guides.forEach(g => {
-        const gTours = tours.filter(t => t.guideId == g.id && t.status !== 'Cancelled');
-        const totalServiceCount = gTours.reduce((count, t) => count + getTourAccountingBreakdown(t.service).length, 0);
-        const yr = gTours.reduce((s,t) => s + getTourFee(t.service), 0);
-        csv += `"${g.name}","${g.phone||''}","${totalServiceCount}",${yr}\n`;
+      const [selYear] = getActiveMonthFilter().split('-').map(Number);
+      const monthLabels = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
+      let headerCols = ["Nome Guida", "Telefono"];
+      monthLabels.forEach(m => {
+        headerCols.push(`${m} Tour`, `${m} Guadagno`);
       });
+      headerCols.push("Totale Tour", "Totale Guadagni");
+
+      let csv = "data:text/csv;charset=utf-8," + headerCols.join(",") + "\n";
+
+      guides.forEach(g => {
+        const gTours = tours.filter(t => {
+          if (t.guideId != g.id || !t.date || t.status === 'Cancelled') return false;
+          const [ty] = t.date.split('-').map(Number);
+          return ty === selYear;
+        });
+
+        const perMonth = Array.from({ length: 12 }, () => ({ tours: 0, fee: 0 }));
+        let yrTours = 0;
+        let yrFee = 0;
+
+        gTours.forEach(t => {
+          const [, tm] = t.date.split('-').map(Number);
+          const mIdx = tm - 1;
+          if (mIdx >= 0 && mIdx < 12) {
+            const parts = getTourAccountingBreakdown(t.service);
+            const c = parts.length;
+            const f = parts.reduce((sum, p) => sum + p.fee, 0);
+            perMonth[mIdx].tours += c;
+            perMonth[mIdx].fee += f;
+            yrTours += c;
+            yrFee += f;
+          }
+        });
+
+        let row = [`"${g.name}"`, `"${g.phone || ''}"`];
+        for (let m = 0; m < 12; m++) {
+          row.push(perMonth[m].tours, perMonth[m].fee.toFixed(2));
+        }
+        row.push(yrTours, yrFee.toFixed(2));
+        csv += row.join(",") + "\n";
+      });
+
       const encodedUri = encodeURI(csv);
       const link = document.createElement("a"); link.setAttribute("href", encodedUri);
-      link.setAttribute("download", "report_contabile_guide.csv");
+      link.setAttribute("download", `report_contabile_guide_${selYear}.csv`);
       document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
 
@@ -2206,6 +2400,7 @@
     }
 
     function renderAllViews() {
+      applyMonthToAllInputs(activeGlobalMonth);
       renderMonthlyCascade();
       renderMonthlyReport();
       renderCalendarMatch();
