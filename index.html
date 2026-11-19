@@ -31,9 +31,9 @@
 
     .container { max-width: 1400px; margin: 0 auto; }
 
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color); }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 12px; }
     h1 { font-size: 1.5rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
-    .header-actions { display: flex; gap: 10px; }
+    .header-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 
     .nav-tabs { display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; flex-wrap: wrap; }
     .tab-btn { background: none; border: none; padding: 8px 16px; font-weight: 600; color: var(--text-muted); border-radius: 6px; cursor: pointer; transition: all 0.2s; }
@@ -63,7 +63,6 @@
     .btn-excel:hover { background-color: #15803d; }
     .btn-sm { padding: 4px 10px; font-size: 0.75rem; }
 
-    /* Switch Blocco Modifiche Planner */
     .btn-lock-red { background-color: #ef4444 !important; color: white !important; font-weight: 700; }
     .btn-lock-green { background-color: #10b981 !important; color: white !important; font-weight: 700; }
 
@@ -100,8 +99,28 @@
       100% { background-color: transparent; }
     }
 
+    .cascade-top-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 12px 16px;
+      background: var(--bg-main);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+    }
+    .cascade-top-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-left: auto;
+    }
+
     .day-cascade-box { background: white; border: 1px solid var(--border-color); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; box-shadow: var(--shadow); }
-    .day-cascade-header { font-size: 1rem; font-weight: 700; color: var(--primary); border-bottom: 2px solid var(--primary-light); padding-bottom: 6px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .day-cascade-header { font-size: 1rem; font-weight: 700; color: var(--primary); border-bottom: 2px solid var(--primary-light); padding-bottom: 6px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
 
     .slot-title { font-size: 0.9rem; font-weight: 700; color: var(--text-main); padding: 6px 10px; background: var(--bg-main); border-radius: 6px; margin-top: 10px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
 
@@ -182,7 +201,6 @@
       <div class="header-actions">
         <span id="sync-indicator" class="sync-status sync-offline">● Connessione Cloud...</span>
         <button class="btn btn-secondary" onclick="window.print()">Stampa Programma</button>
-        <button class="btn btn-danger-light btn-sm" onclick="resetData()">Reset Dati Predefiniti</button>
       </div>
     </header>
 
@@ -206,11 +224,9 @@
       </div>
     </div>
 
-    <!-- DATALIST SUGGERIMENTI CUSTOM PER TOUR E SERVICE REMARK -->
     <datalist id="group-list"></datalist>
     <datalist id="service-list"></datalist>
 
-    <!-- Input file universale: accetta Excel, Numbers, CSV, PDF e Foto (PNG, JPG, HEIC) -->
     <input type="file" id="universal-file-input" accept=".xlsx, .xls, .csv, .numbers, application/vnd.apple.numbers, .pdf, image/*" style="display: none;" onchange="handleUniversalFileImport(event)">
 
     <!-- Navigation Tabs -->
@@ -230,9 +246,8 @@
         <div class="card-title">
           <span>Gestione Turni e Dispacciamento a Cascata (Tutto il Mese - Modifica Diretta Attiva)</span>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <input type="month" id="cascade-month-filter" class="form-control" value="2026-09" style="width: 150px;" onchange="renderMonthlyCascade()">
+            <input type="month" id="cascade-month-filter" class="form-control" style="width: 150px;" onchange="renderMonthlyCascade()">
             <button class="btn btn-excel" onclick="document.getElementById('universal-file-input').click()">📂 Carica File / PDF / Foto (OCR)</button>
-            <button class="btn btn-magic" onclick="runMagicShuffle()">🪄 Magic Shuffle (Famiglia)</button>
           </div>
         </div>
 
@@ -240,7 +255,7 @@
           <div style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
             <div class="form-group" style="width: 150px;">
               <label>Data Turno</label>
-              <input type="date" id="alloc-date" class="form-control" value="2026-09-02">
+              <input type="date" id="alloc-date" class="form-control">
             </div>
             <div class="form-group" style="width: 180px;">
               <label>Tour (es. LI, M3A)</label>
@@ -248,7 +263,7 @@
             </div>
             <div class="form-group" style="width: 240px;">
               <label>Service Remark (es. HIGH PM + CENA)</label>
-              <input type="text" id="alloc-service-select" class="form-control" list="service-list" placeholder="Digita o seleziona..." oninput="updateAutoQty()">
+              <input type="text" id="alloc-service-select" class="form-control" list="service-list" placeholder="Digita o seleziona..." oninput="syncSlotAndAutoQty()">
             </div>
             <div class="form-group" style="width: 90px;">
               <label>Slot</label>
@@ -271,7 +286,15 @@
           </div>
         </div>
 
-        <!-- CONTENITORE A CASCATA DI TUTTI I GIORNI DEL MESE -->
+        <!-- BARRA INIZIO CASCATA: MAGIC SHUFFLE E RESET MESE IN ALTO A DESTRA -->
+        <div class="cascade-top-toolbar">
+          <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-main);">⬇️ Cascata Giornaliera Turni</span>
+          <div class="cascade-top-actions">
+            <button class="btn btn-magic btn-sm" onclick="runMagicShuffle()">🪄 Magic Shuffle (Solo Mese)</button>
+            <button class="btn btn-danger-light btn-sm" onclick="resetMonthData()">Reset Mese Selezionato</button>
+          </div>
+        </div>
+
         <div id="monthly-cascade-container"></div>
       </div>
     </div>
@@ -282,7 +305,7 @@
         <div class="card-title">
           <span>📁 Cartella Riepilogo Mensile Servizi</span>
           <div style="display: flex; gap: 10px; align-items: center;">
-            <input type="month" id="report-month-input" class="form-control" value="2026-09" style="width: 160px;" onchange="renderMonthlyReport()">
+            <input type="month" id="report-month-input" class="form-control" style="width: 160px;" onchange="renderMonthlyReport()">
             <button class="btn btn-secondary" onclick="window.print()">Stampa Riepilogo Mensile</button>
           </div>
         </div>
@@ -318,7 +341,7 @@
         <div class="card-title">
           <span>🗓️ Calendario Match Disponibilità e Risposte Negative Guide</span>
           <div style="display: flex; gap: 10px; align-items: center;">
-            <input type="month" id="cal-month-input" class="form-control" value="2026-09" style="width:160px;" onchange="renderCalendarMatch()">
+            <input type="month" id="cal-month-input" class="form-control" style="width:160px;" onchange="renderCalendarMatch()">
             <select id="cal-guide-filter" class="form-control" style="width:200px;" onchange="renderCalendarMatch()">
               <option value="">Tutte le Guide</option>
             </select>
@@ -341,9 +364,7 @@
         <div class="card-title">
           <span>Disponibilità Mensile Guide (Domeniche e Festivi in Rosso)</span>
           <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <input type="month" id="planner-month" class="form-control" value="2026-09" style="width:160px;" onchange="resetPlannerLockAndRender()">
-            
-            <!-- PULSANTE SWITCH SICUREZZA PER MODIFICHE -->
+            <input type="month" id="planner-month" class="form-control" style="width:160px;" onchange="resetPlannerLockAndRender()">
             <button id="planner-lock-btn" class="btn btn-lock-red" onclick="togglePlannerEditMode()">
               🔒 Modifiche Disattivate
             </button>
@@ -364,7 +385,7 @@
       </div>
     </div>
 
-    <!-- TAB 5: COMPLETE ANAGRAFICA & DIRECTORY (ORDINATA PER COGNOME) -->
+    <!-- TAB 5: COMPLETE ANAGRAFICA & DIRECTORY -->
     <div id="tab-anagrafica" class="tab-content">
       <div class="card">
         <div class="card-title">
@@ -416,7 +437,7 @@
           <span>Riepilogo Programma Turni</span>
           <div class="form-group" style="width: 160px; margin-bottom: 0;">
             <label>Filtra Mese Visualizzazione</label>
-            <input type="month" id="sg-month-filter" class="form-control" value="2026-09" onchange="renderSingleGuideView()">
+            <input type="month" id="sg-month-filter" class="form-control" onchange="renderSingleGuideView()">
           </div>
         </div>
         <div class="table-responsive">
@@ -430,7 +451,7 @@
       </div>
     </div>
 
-    <!-- TAB 7: RESERVED ACCOUNT PAGE (ONLY FOR MANAGER) -->
+    <!-- TAB 7: RESERVED ACCOUNT PAGE -->
     <div id="tab-account" class="tab-content">
       <div class="card" style="border-top: 4px solid var(--primary);">
         <div class="card-title">
@@ -481,7 +502,7 @@
         <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
           <div class="form-group" style="width: 180px; margin-bottom: 0;">
             <label>Filtra per Mese</label>
-            <input type="month" id="gam-month-filter" class="form-control" value="2026-09" onchange="renderGuideAccountModalContent()">
+            <input type="month" id="gam-month-filter" class="form-control" onchange="renderGuideAccountModalContent()">
           </div>
           <div style="display: flex; gap: 8px;">
             <button class="btn btn-excel btn-sm" onclick="exportSingleGuideAccountCSV()">📥 Scarica</button>
@@ -553,7 +574,8 @@
       { name: "HIGH PM + CENA", price: 295.00, type: "other" },
       { name: "CSS", price: 245.00, type: "other" },
       { name: "SERALE GHETTO", price: 230.00, type: "other" },
-      { name: "BASILICA DI SAN PIETRO", price: 230.00, type: "vaticano" }
+      { name: "BASILICA DI SAN PIETRO", price: 230.00, type: "vaticano" },
+      { name: "VATICANO + COLOSSEO", price: 540.00, type: "combo" }
     ];
 
     const DEFAULT_GUIDES = [
@@ -569,14 +591,8 @@
       { id: 7, name: "Lisa Titova", phone: "+393486804456", email: "", notes: "Vaticano, Inglese, Famiglia", status: "Active" }
     ];
 
-    const DEFAULT_TOURS = [
-      { id: '1', date: '2026-09-02', slot: 'FULL', groupCode: 'LI', service: 'VAT CHOICE AM + CSS', pax: 13, guideId: 1, status: 'Scheduled' },
-      { id: '2', date: '2026-09-02', slot: 'PM', groupCode: 'M3A', service: 'HIGH PM + CENA', pax: 1, guideId: '', status: 'Scheduled' }
-    ];
-
-    const DEFAULT_AVAILABILITIES = {
-      "1_2026-09-02": "FULL"
-    };
+    const DEFAULT_TOURS = [];
+    const DEFAULT_AVAILABILITIES = {};
 
     let guides = JSON.parse(localStorage.getItem('tg_guides')) || DEFAULT_GUIDES;
     let tours = JSON.parse(localStorage.getItem('tg_tours')) || DEFAULT_TOURS;
@@ -585,40 +601,218 @@
     let dbRef = null;
     let isFirebaseConnected = false;
     let currentSelectedGuideIdForModal = null;
-
-    // VARIABILE PER LO STATO DEL BLOCCO SICUREZZA PLANNER (Di default SEMPRE Bloccato)
     let isPlannerUnlocked = false;
 
-    function getTourFee(serviceName) {
-      if (!serviceName) return 245.00;
+    function isVaticanoPlusColosseo(serviceName) {
+      if (!serviceName) return false;
       const upper = serviceName.toUpperCase();
+      const hasVat = upper.includes('VATICANO') || upper.includes('VAT');
+      const hasCol = upper.includes('COLOSSEO') || upper.includes('COLOSSEUM') || upper.includes('COL');
+      return hasVat && hasCol;
+    }
 
-      if ((upper.includes('BASILICA') || upper.includes('SAN PIETRO')) && upper.includes('FORI')) {
+    function getTourServiceUnits(serviceName) {
+      return isVaticanoPlusColosseo(serviceName) ? 2 : 1;
+    }
+
+    function expandTourForMonthlyReport(tour) {
+      const guide = guides.find(g => g.id == tour.guideId) || { name: 'Non Assegnata' };
+      const paxVal = parseInt(tour.pax) || 25;
+
+      if (!isVaticanoPlusColosseo(tour.service)) {
+        return [{
+          date: tour.date,
+          slot: tour.slot,
+          groupCode: tour.groupCode,
+          service: tour.service,
+          pax: paxVal,
+          guideName: guide.name,
+          status: tour.status
+        }];
+      }
+
+      const rawParts = (tour.service || '').split('+').map(p => p.trim()).filter(Boolean);
+      const vatPart = rawParts.find(p => {
+        const u = p.toUpperCase();
+        return u.includes('VAT') || u.includes('VATICANO');
+      }) || 'VATICANO';
+      const colPart = rawParts.find(p => {
+        const u = p.toUpperCase();
+        return u.includes('COL') || u.includes('COLOSSEO') || u.includes('COLOSSEUM');
+      }) || 'COLOSSEO';
+
+      return [
+        {
+          date: tour.date,
+          slot: 'AM',
+          groupCode: tour.groupCode,
+          service: `${vatPart} (Servizio 1/2)`,
+          pax: paxVal,
+          guideName: guide.name,
+          status: tour.status
+        },
+        {
+          date: tour.date,
+          slot: 'PM',
+          groupCode: tour.groupCode,
+          service: `${colPart} (Servizio 2/2)`,
+          pax: paxVal,
+          guideName: guide.name,
+          status: tour.status
+        }
+      ];
+    }
+
+    function hasVaticanoService(serviceName) {
+      if (!serviceName) return false;
+      const upper = serviceName.toUpperCase();
+      return upper.includes('VATICANO') || upper.includes('VAT');
+    }
+
+    function isHighCenaOrPmHighlights(tour) {
+      if (!tour || !tour.service) return false;
+      const upper = tour.service.toUpperCase();
+      const isHighCena = upper.includes('HIGH') && upper.includes('CENA');
+      const isPmHighlights = (tour.slot === 'PM' || upper.includes('PM')) &&
+                             (upper.includes('HIGH') || upper.includes('HIGHLIGHT'));
+      return isHighCena || isPmHighlights;
+    }
+
+    function getPreviousDayStr(dateStr) {
+      if (!dateStr) return '';
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const dt = new Date(y, m - 1, d - 1);
+      const py = dt.getFullYear();
+      const pm = String(dt.getMonth() + 1).padStart(2, '0');
+      const pd = String(dt.getDate()).padStart(2, '0');
+      return `${py}-${pm}-${pd}`;
+    }
+
+    function getCurrentDateParts() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      return {
+        year,
+        monthNum: now.getMonth() + 1,
+        monthStr: `${year}-${month}`,
+        dateStr: `${year}-${month}-${day}`
+      };
+    }
+
+    function setCalendarsToCurrentDate() {
+      const { monthStr, dateStr } = getCurrentDateParts();
+      const monthInputs = [
+        'cascade-month-filter',
+        'report-month-input',
+        'cal-month-input',
+        'planner-month',
+        'sg-month-filter',
+        'gam-month-filter'
+      ];
+      monthInputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = monthStr;
+      });
+
+      const allocDate = document.getElementById('alloc-date');
+      if (allocDate) allocDate.value = dateStr;
+    }
+
+    function getWeekdayIt(dateStr) {
+      if (!dateStr) return '';
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const dt = new Date(y, m - 1, d);
+      const raw = dt.toLocaleDateString('it-IT', { weekday: 'long' });
+      return raw.charAt(0).toUpperCase() + raw.slice(1);
+    }
+
+    function getSinglePartFee(partName) {
+      const cleanPart = (partName || '').trim();
+      const cleanUpper = cleanPart.toUpperCase();
+      if (!cleanPart) return 245.00;
+      if (cleanUpper.includes('VAT') || cleanUpper.includes('VATICANO')) {
+        if (cleanUpper.includes('NO BASILICA')) return 280.00;
+        if (cleanUpper.includes('BASILICA')) return 230.00;
+        return 295.00;
+      }
+      if (cleanUpper.includes('COLOSSEO') || cleanUpper.includes('COLOSSEUM') || cleanUpper === 'COL') {
+        if (cleanUpper.includes('CHOICE')) return 295.00;
         return 245.00;
+      }
+      if (cleanUpper.includes('CENA')) return 295.00;
+      const s = SERVICES_CATALOG.find(x => x.name.toLowerCase() === cleanPart.toLowerCase());
+      return s ? s.price : 245.00;
+    }
+
+    function getTourAccountingBreakdown(serviceName) {
+      if (!serviceName) {
+        return [{ label: 'Servizio', fee: 245.00 }];
+      }
+
+      if (isVaticanoPlusColosseo(serviceName)) {
+        const parts = serviceName.split('+').map(p => p.trim()).filter(Boolean);
+        if (parts.length >= 2) {
+          return parts.map((p, idx) => ({
+            label: `${serviceName} (Parte ${idx + 1}: ${p})`,
+            fee: getSinglePartFee(p)
+          }));
+        }
+        return [
+          { label: `${serviceName} (Servizio Vaticano)`, fee: 295.00 },
+          { label: `${serviceName} (Servizio Colosseo)`, fee: 245.00 }
+        ];
+      }
+
+      const upper = serviceName.toUpperCase();
+      if ((upper.includes('BASILICA') || upper.includes('SAN PIETRO')) && upper.includes('FORI')) {
+        return [{ label: serviceName, fee: 245.00 }];
       }
 
       if (upper.includes('+') && !upper.includes('CENA')) {
         const parts = serviceName.split('+');
         let totalSum = 0;
         parts.forEach(part => {
-          const cleanPart = part.trim();
-          const cleanUpper = cleanPart.toUpperCase();
-          if (cleanUpper.includes('VAT')) {
-            totalSum += 295.00;
-          } else {
-            const s = SERVICES_CATALOG.find(x => x.name.toLowerCase() === cleanPart.toLowerCase());
-            totalSum += s ? s.price : 245.00;
-          }
+          totalSum += getSinglePartFee(part);
         });
-        return totalSum;
+        return [{ label: serviceName, fee: totalSum }];
       }
 
       if (upper.includes('VAT') || upper.includes('CENA')) {
-        return 295.00;
+        return [{ label: serviceName, fee: 295.00 }];
       }
 
       const s = SERVICES_CATALOG.find(x => x.name.toLowerCase() === serviceName.toLowerCase());
-      return s ? s.price : 245.00;
+      return [{ label: serviceName, fee: s ? s.price : 245.00 }];
+    }
+
+    function getTourFee(serviceName) {
+      return getTourAccountingBreakdown(serviceName).reduce((sum, item) => sum + item.fee, 0);
+    }
+
+    function getGuideAccountingEntriesForMonth(guideId, year, month) {
+      const entries = [];
+      const guideTours = tours.filter(t => {
+        if (t.guideId != guideId || !t.date || t.status === 'Cancelled') return false;
+        const [tYear, tMonth] = t.date.split('-').map(Number);
+        return tYear === year && tMonth === month;
+      }).sort((a,b) => new Date(a.date) - new Date(b.date));
+
+      guideTours.forEach(t => {
+        const parts = getTourAccountingBreakdown(t.service);
+        parts.forEach(p => {
+          entries.push({
+            date: t.date,
+            slot: isVaticanoPlusColosseo(t.service) ? 'AM' : t.slot,
+            groupCode: t.groupCode,
+            service: p.label,
+            fee: p.fee
+          });
+        });
+      });
+
+      return entries;
     }
 
     function updateTourField(tourId, field, value) {
@@ -628,6 +822,9 @@
           t.pax = parseInt(value) || 0;
         } else {
           t[field] = value.trim();
+        }
+        if (isVaticanoPlusColosseo(t.service)) {
+          t.slot = 'AM';
         }
         saveData();
         renderAllViewsExceptCascade();
@@ -722,7 +919,9 @@
               let slot = 'AM';
               const upperService = service.toUpperCase();
               
-              if (upperService.includes('CENA') || upperService.includes('PM') || upperService.includes('POMERIGGIO') || upperService.includes('SERALE')) {
+              if (isVaticanoPlusColosseo(service)) {
+                slot = 'AM';
+              } else if (upperService.includes('CENA') || upperService.includes('PM') || upperService.includes('POMERIGGIO') || upperService.includes('SERALE')) {
                 slot = 'PM';
               } else if (upperService.includes('+') && !upperService.includes('CENA')) {
                 slot = 'FULL';
@@ -785,6 +984,7 @@
         };
         reader.readAsArrayBuffer(file);
       }
+      event.target.value = '';
     }
 
     function processTextLines(fullText) {
@@ -798,7 +998,8 @@
 
         let slot = 'AM';
         const upper = clean.toUpperCase();
-        if (upper.includes('CENA') || upper.includes('PM') || upper.includes('POMERIGGIO')) slot = 'PM';
+        if (isVaticanoPlusColosseo(clean)) slot = 'AM';
+        else if (upper.includes('CENA') || upper.includes('PM') || upper.includes('POMERIGGIO')) slot = 'PM';
         else if (upper.includes('FULL') || upper.includes('+')) slot = 'FULL';
 
         let foundCode = 'M3A';
@@ -911,12 +1112,39 @@
       }
     }
 
-    function resetData() {
-      if (confirm("Ripristinare i dati predefiniti?")) {
-        localStorage.clear();
-        guides = DEFAULT_GUIDES; tours = DEFAULT_TOURS; availabilities = DEFAULT_AVAILABILITIES;
-        saveData(); initApp();
+    function getActiveMonthFilter() {
+      const el = document.getElementById('cascade-month-filter');
+      return (el && el.value) ? el.value : getCurrentDateParts().monthStr;
+    }
+
+    function resetMonthData() {
+      const monthVal = getActiveMonthFilter();
+      if (!confirm(`Vuoi resettare tutti i turni e le disponibilità del mese ${monthVal}? Gli altri mesi non verranno modificati.`)) {
+        return;
       }
+
+      tours = tours.filter(t => !t.date || !t.date.startsWith(monthVal + '-'));
+
+      Object.keys(availabilities).forEach(key => {
+        const parts = key.split('_');
+        const dateKey = parts[1];
+        if (dateKey && dateKey.startsWith(monthVal + '-')) {
+          delete availabilities[key];
+        }
+      });
+
+      saveData();
+      renderAllViews();
+      alert(`Dati del mese ${monthVal} resettati con successo.`);
+    }
+
+    function syncSlotAndAutoQty() {
+      const serviceInput = document.getElementById('alloc-service-select');
+      const slotSelect = document.getElementById('alloc-slot-select');
+      if (serviceInput && slotSelect && isVaticanoPlusColosseo(serviceInput.value)) {
+        slotSelect.value = 'AM';
+      }
+      updateAutoQty();
     }
 
     function updateAutoQty() {
@@ -952,7 +1180,6 @@
       return dayOfWeek === 0 || fixedHolidays.includes(dateString) || mobileHolidays.includes(dateString);
     }
 
-    // REGOLA RICHIESTA: QUANDO CAMBI SCHEDA, IL BLOCCO DEVE RITORNARE AUTOMATICAMENTE ROSSO
     function switchTab(tabId) {
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
@@ -961,7 +1188,6 @@
       if (btn) btn.classList.add('active');
       document.getElementById(`tab-${tabId}`).classList.add('active');
 
-      // Ripristina il blocco sicurezza su ROSSO ogni volta che cambi scheda
       isPlannerUnlocked = false;
       updatePlannerLockButtonUI();
 
@@ -1017,7 +1243,7 @@
     }
 
     function renderMonthlyCascade() {
-      const monthVal = document.getElementById('cascade-month-filter').value;
+      const monthVal = getActiveMonthFilter();
       const [year, month] = monthVal.split('-').map(Number);
       const daysInMonth = new Date(year, month, 0).getDate();
 
@@ -1035,6 +1261,7 @@
 
         const amTours = dayTours.filter(t => t.slot === 'AM' || t.slot === 'FULL');
         const pmTours = dayTours.filter(t => t.slot === 'PM' || t.slot === 'FULL');
+        const weekdayLabel = getWeekdayIt(dateStr);
 
         const box = document.createElement('div');
         box.className = 'day-cascade-box';
@@ -1042,7 +1269,7 @@
         
         let boxHtml = `
           <div class="day-cascade-header">
-            <span>📅 ${formatDateIt(dateStr)} (${dayTours.length} Servizi)</span>
+            <span>📅 ${weekdayLabel} ${formatDateIt(dateStr)} (${dayTours.length} Servizi)</span>
             <button class="btn btn-secondary btn-sm" onclick="document.getElementById('alloc-date').value='${dateStr}'; window.scrollTo({top:0, behavior:'smooth'});">+ Aggiungi in questa data</button>
           </div>
         `;
@@ -1114,7 +1341,7 @@
             <td>
               <input type="text" class="input-inline" value="${t.service}" 
                 list="service-list"
-                onchange="updateTourField('${t.id}', 'service', this.value)">
+                onchange="updateTourField('${t.id}', 'service', this.value); renderMonthlyCascade();">
             </td>
             <td>
               <input type="number" class="input-inline" style="width:70px;" value="${t.pax || 25}" min="1" max="150"
@@ -1139,7 +1366,7 @@
     }
 
     function openUnassignedModal() {
-      const monthVal = document.getElementById('cascade-month-filter').value;
+      const monthVal = getActiveMonthFilter();
       const [year, month] = monthVal.split('-').map(Number);
 
       const monthTours = tours.filter(t => {
@@ -1262,56 +1489,95 @@
       }, 150);
     }
 
+    function isGuideEligibleForTour(guide, tour) {
+      if (!guide || guide.status !== 'Active') return false;
+      const avail = availabilities[`${guide.id}_${tour.date}`] || 'FULL';
+      if (avail === 'OFF') return false;
+      if (avail === 'AM' && tour.slot === 'PM') return false;
+      if (avail === 'PM' && tour.slot === 'AM') return false;
+
+      const isBusy = tours.some(x =>
+        x.id !== tour.id &&
+        x.guideId == guide.id &&
+        x.date === tour.date &&
+        (x.slot === tour.slot || x.slot === 'FULL' || tour.slot === 'FULL')
+      );
+      return !isBusy;
+    }
+
     function runMagicShuffle() {
-      if (!confirm("Vuoi eseguire l'assegnazione automatica Magic Shuffle per i turni del mese?")) return;
+      const monthVal = getActiveMonthFilter();
+      if (!confirm(`Vuoi eseguire l'assegnazione automatica Magic Shuffle solo per i turni del mese ${monthVal}?`)) return;
 
       let guideFeeTotals = {};
-      guides.forEach(g => guideFeeTotals[g.id] = 0);
+      let guideServiceCounts = {};
+      guides.forEach(g => {
+        guideFeeTotals[g.id] = 0;
+        guideServiceCounts[g.id] = 0;
+      });
       
-      tours.forEach(t => {
+      tours.filter(t => t.date && t.date.startsWith(monthVal + '-') && t.status !== 'Cancelled').forEach(t => {
         if (t.guideId && guideFeeTotals[t.guideId] !== undefined) {
           guideFeeTotals[t.guideId] += getTourFee(t.service);
+          guideServiceCounts[t.guideId] += getTourServiceUnits(t.service);
         }
       });
 
-      let unassignedTours = tours.filter(t => !t.guideId && t.date);
+      let unassignedTours = tours.filter(t => !t.guideId && t.date && t.date.startsWith(monthVal + '-') && t.status !== 'Cancelled');
       unassignedTours.sort((a, b) => new Date(a.date) - new Date(b.date));
 
       const privilegedCodes = ["LI", "LB", "LJ", "LR", "M3A"];
 
       unassignedTours.forEach(t => {
-        if (t.slot === 'PM' || t.slot === 'FULL') {
-          const morningMatch = tours.find(x => x.date === t.date && x.groupCode === t.groupCode && x.guideId && (x.slot === 'AM' || x.slot === 'FULL') && x.id !== t.id);
-          if (morningMatch) {
-            const gAssignedMorning = guides.find(g => g.id == morningMatch.guideId);
-            if (gAssignedMorning && gAssignedMorning.status === 'Active') {
-              const avail = availabilities[`${gAssignedMorning.id}_${t.date}`] || 'FULL';
-              const isBusy = tours.some(x => x.guideId == gAssignedMorning.id && x.date === t.date && (x.slot === t.slot || x.slot === 'FULL'));
-              if (avail !== 'OFF' && avail !== 'AM' && !isBusy) {
-                t.guideId = gAssignedMorning.id;
-                guideFeeTotals[gAssignedMorning.id] += getTourFee(t.service);
-                return;
-              }
+        if (isVaticanoPlusColosseo(t.service)) {
+          t.slot = 'AM';
+        }
+
+        const serviceUnits = getTourServiceUnits(t.service);
+        const currentFee = getTourFee(t.service);
+
+        const assignAndTrack = (guideObj) => {
+          t.guideId = guideObj.id;
+          guideFeeTotals[guideObj.id] += currentFee;
+          guideServiceCounts[guideObj.id] += serviceUnits;
+        };
+
+        if (isHighCenaOrPmHighlights(t) && t.groupCode) {
+          const prevDateStr = getPreviousDayStr(t.date);
+          const prevDayVaticanoMatch = tours.find(prev =>
+            prev.date === prevDateStr &&
+            prev.groupCode &&
+            prev.groupCode.trim().toUpperCase() === t.groupCode.trim().toUpperCase() &&
+            hasVaticanoService(prev.service) &&
+            prev.guideId
+          );
+          if (prevDayVaticanoMatch) {
+            const prevGuide = guides.find(g => g.id == prevDayVaticanoMatch.guideId);
+            if (isGuideEligibleForTour(prevGuide, t)) {
+              assignAndTrack(prevGuide);
+              return;
             }
           }
         }
 
-        let availableGuides = guides.filter(g => {
-          if (g.status !== 'Active') return false;
-          const avail = availabilities[`${g.id}_${t.date}`] || 'FULL';
-          
-          if (avail === 'OFF') return false;
-          if (avail === 'AM' && t.slot === 'PM') return false;
-          if (avail === 'PM' && t.slot === 'AM') return false;
+        if (t.slot === 'PM' || t.slot === 'FULL') {
+          const morningMatch = tours.find(x => x.date === t.date && x.groupCode === t.groupCode && x.guideId && (x.slot === 'AM' || x.slot === 'FULL') && x.id !== t.id);
+          if (morningMatch) {
+            const gAssignedMorning = guides.find(g => g.id == morningMatch.guideId);
+            if (isGuideEligibleForTour(gAssignedMorning, t)) {
+              assignAndTrack(gAssignedMorning);
+              return;
+            }
+          }
+        }
 
-          const isBusy = tours.some(x => x.guideId == g.id && x.date === t.date && (x.slot === t.slot || x.slot === 'FULL' || t.slot === 'FULL'));
-          return !isBusy;
-        });
+        let availableGuides = guides.filter(g => isGuideEligibleForTour(g, t));
 
         if (availableGuides.length > 0) {
-          const currentFee = getTourFee(t.service);
-
           availableGuides.sort((a, b) => {
+            const countDiff = (guideServiceCounts[a.id] + serviceUnits) - (guideServiceCounts[b.id] + serviceUnits);
+            if (countDiff !== 0) return countDiff;
+
             let scoreA = guideFeeTotals[a.id];
             let scoreB = guideFeeTotals[b.id];
 
@@ -1329,15 +1595,13 @@
             return scoreA - scoreB;
           });
 
-          const selectedGuide = availableGuides[0];
-          t.guideId = selectedGuide.id;
-          guideFeeTotals[selectedGuide.id] += currentFee;
+          assignAndTrack(availableGuides[0]);
         }
       });
 
       saveData();
       renderAllViews();
-      alert("Magic Shuffle completato con successo!");
+      alert(`Magic Shuffle completato per il mese ${monthVal}!`);
     }
 
     function renderCalendarMatch() {
@@ -1521,10 +1785,11 @@
       const date = document.getElementById('alloc-date').value;
       const groupInput = document.getElementById('alloc-group-select');
       const serviceInput = document.getElementById('alloc-service-select');
+      const slotSelect = document.getElementById('alloc-slot-select');
 
       const groupCode = groupInput.value.trim() || 'GENERICO';
       const service = serviceInput.value.trim() || 'Servizio Generico';
-      const slot = document.getElementById('alloc-slot-select').value;
+      const slot = isVaticanoPlusColosseo(service) ? 'AM' : slotSelect.value;
       const pax = parseInt(document.getElementById('alloc-pax').value) || 25;
       const qty = parseInt(document.getElementById('alloc-qty').value) || 1;
 
@@ -1561,41 +1826,42 @@
 
       let totalPax = 0;
       const activeGuidesSet = new Set();
+      const expandedRows = [];
 
       monthTours.forEach(t => {
         totalPax += (parseInt(t.pax) || 25);
         if (t.guideId) activeGuidesSet.add(t.guideId);
+        const parts = expandTourForMonthlyReport(t);
+        parts.forEach(p => expandedRows.push(p));
       });
 
-      document.getElementById('rep-total-tours').textContent = monthTours.length;
+      document.getElementById('rep-total-tours').textContent = expandedRows.length;
       document.getElementById('rep-total-pax').textContent = totalPax;
       document.getElementById('rep-total-guides').textContent = activeGuidesSet.size;
 
       const tbody = document.getElementById('monthly-report-tbody');
       tbody.innerHTML = '';
 
-      if (monthTours.length === 0) {
+      if (expandedRows.length === 0) {
         tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: var(--text-muted);">Nessun servizio registrato per il mese selezionato.</td></tr>`;
         return;
       }
 
-      monthTours.forEach(t => {
-        const guide = guides.find(g => g.id == t.guideId) || { name: 'Non Assegnata' };
+      expandedRows.forEach(row => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${formatDateIt(t.date)}</td>
-          <td><strong>${t.slot}</strong></td>
-          <td><strong>${t.groupCode}</strong></td>
-          <td>${t.service}</td>
-          <td>${t.pax || 25} pax</td>
-          <td>${guide.name}</td>
-          <td><span class="badge ${t.status === 'Completed' ? 'badge-available' : 'badge-busy'}">${t.status}</span></td>
+          <td>${formatDateIt(row.date)}</td>
+          <td><strong>${row.slot}</strong></td>
+          <td><strong>${row.groupCode}</strong></td>
+          <td>${row.service}</td>
+          <td>${row.pax} pax</td>
+          <td>${row.guideName}</td>
+          <td><span class="badge ${row.status === 'Completed' ? 'badge-available' : 'badge-busy'}">${row.status}</span></td>
         `;
         tbody.appendChild(tr);
       });
     }
 
-    // --- LOGICA INTERRUTTORE DI SICUREZZA PER DISPONIBILITÀ ---
     function togglePlannerEditMode() {
       isPlannerUnlocked = !isPlannerUnlocked;
       updatePlannerLockButtonUI();
@@ -1666,10 +1932,7 @@
     }
 
     function cycleAvailability(guideId, dateStr) {
-      if (!isPlannerUnlocked) {
-        // Se è bloccato (Rosso), ignoriamo qualsiasi tocco accidentale
-        return;
-      }
+      if (!isPlannerUnlocked) return;
 
       const key = `${guideId}_${dateStr}`;
       const current = availabilities[key] || 'FULL';
@@ -1790,6 +2053,8 @@
     }
 
     function renderAccountPanel() {
+      const { monthNum } = getCurrentDateParts();
+      const targetMonthIndex = monthNum - 1;
       let total = 0;
       tours.forEach(t => {
         total += getTourFee(t.service);
@@ -1799,8 +2064,9 @@
 
       const tbody = document.getElementById('accounting-table-body'); tbody.innerHTML = '';
       guides.forEach(g => {
-        const gTours = tours.filter(t => t.guideId == g.id);
-        const m = gTours.filter(t => new Date(t.date).getMonth() === 8).reduce((s,t) => s + getTourFee(t.service), 0);
+        const gTours = tours.filter(t => t.guideId == g.id && t.date && t.status !== 'Cancelled');
+        const totalServiceCount = gTours.reduce((count, t) => count + getTourAccountingBreakdown(t.service).length, 0);
+        const m = gTours.filter(t => new Date(t.date).getMonth() === targetMonthIndex).reduce((s,t) => s + getTourFee(t.service), 0);
         const q1 = gTours.filter(t => [0,1,2].includes(new Date(t.date).getMonth())).reduce((s,t) => s + getTourFee(t.service), 0);
         const q2 = gTours.filter(t => [3,4,5].includes(new Date(t.date).getMonth())).reduce((s,t) => s + getTourFee(t.service), 0);
         const q3 = gTours.filter(t => [6,7,8].includes(new Date(t.date).getMonth())).reduce((s,t) => s + getTourFee(t.service), 0);
@@ -1811,7 +2077,7 @@
         tr.innerHTML = `
           <td><strong style="color:var(--primary); cursor:pointer; text-decoration:underline;" onclick="openGuideAccountModal(${g.id})">${g.name}</strong></td>
           <td>${g.phone||'-'}</td>
-          <td>${gTours.length}</td>
+          <td>${totalServiceCount}</td>
           <td>€${m.toFixed(2)}</td>
           <td>€${q1.toFixed(2)}</td>
           <td>€${q2.toFixed(2)}</td>
@@ -1842,41 +2108,37 @@
       const monthVal = document.getElementById('gam-month-filter').value;
       const [year, month] = monthVal.split('-').map(Number);
 
-      const guideTours = tours.filter(t => {
-        if (t.guideId != currentSelectedGuideIdForModal || !t.date || t.status === 'Cancelled') return false;
-        const [tYear, tMonth] = t.date.split('-').map(Number);
-        return tYear === year && tMonth === month;
-      }).sort((a,b) => new Date(a.date) - new Date(b.date));
+      const entries = getGuideAccountingEntriesForMonth(currentSelectedGuideIdForModal, year, month);
 
       const tbody = document.getElementById('gam-tbody');
       const tfoot = document.getElementById('gam-tfoot');
       tbody.innerHTML = '';
       tfoot.innerHTML = '';
 
-      if (guideTours.length === 0) {
+      if (entries.length === 0) {
         tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Nessun servizio registrato per questo mese.</td></tr>`;
         return;
       }
 
       let monthTotal = 0;
-      guideTours.forEach(t => {
-        const fee = getTourFee(t.service);
-        monthTotal += fee;
+      entries.forEach(item => {
+        monthTotal += item.fee;
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${formatDateIt(t.date)} (${t.slot})</td>
-          <td><strong>${t.groupCode}</strong></td>
-          <td>${t.service}</td>
-          <td><strong>€${fee.toFixed(2)}</strong></td>
+          <td>${formatDateIt(item.date)}</td>
+          <td><strong>${item.slot}</strong></td>
+          <td><strong>${item.groupCode}</strong></td>
+          <td>${item.service}</td>
+          <td><strong>€${item.fee.toFixed(2)}</strong></td>
         `;
         tbody.appendChild(tr);
       });
 
       tfoot.innerHTML = `
         <tr style="background: var(--bg-main); font-weight: 700; border-top: 2px solid var(--border-color);">
-          <td colspan="3" style="text-align: right;">Totale Mese:</td>
-          <td colspan="2" style="color: var(--primary); font-size: 1rem;">€${monthTotal.toFixed(2)}</td>
+          <td colspan="4" style="text-align: right;">Totale Mese (${entries.length} servizi):</td>
+          <td style="color: var(--primary); font-size: 1rem;">€${monthTotal.toFixed(2)}</td>
         </tr>
       `;
     }
@@ -1887,18 +2149,13 @@
       const monthVal = document.getElementById('gam-month-filter').value;
       const [year, month] = monthVal.split('-').map(Number);
 
-      const guideTours = tours.filter(t => {
-        if (t.guideId != currentSelectedGuideIdForModal || !t.date || t.status === 'Cancelled') return false;
-        const [tYear, tMonth] = t.date.split('-').map(Number);
-        return tYear === year && tMonth === month;
-      });
+      const entries = getGuideAccountingEntriesForMonth(currentSelectedGuideIdForModal, year, month);
 
       let csv = `data:text/csv;charset=utf-8,Data,Slot,Tour,Service Remark,Compenso\n`;
       let total = 0;
-      guideTours.forEach(t => {
-        const fee = getTourFee(t.service);
-        total += fee;
-        csv += `"${formatDateIt(t.date)}","${t.slot}","${t.groupCode}","${t.service}",${fee}\n`;
+      entries.forEach(item => {
+        total += item.fee;
+        csv += `"${formatDateIt(item.date)}","${item.slot}","${item.groupCode}","${item.service}",${item.fee}\n`;
       });
       csv += `,,,Totale,${total}\n`;
 
@@ -1914,9 +2171,10 @@
     function exportAccountingCSV() {
       let csv = "data:text/csv;charset=utf-8,Nome Guida,Telefono,Totale Tour,Guadagno Annuale\n";
       guides.forEach(g => {
-        const gTours = tours.filter(t => t.guideId == g.id);
+        const gTours = tours.filter(t => t.guideId == g.id && t.status !== 'Cancelled');
+        const totalServiceCount = gTours.reduce((count, t) => count + getTourAccountingBreakdown(t.service).length, 0);
         const yr = gTours.reduce((s,t) => s + getTourFee(t.service), 0);
-        csv += `"${g.name}","${g.phone||''}","${gTours.length}",${yr}\n`;
+        csv += `"${g.name}","${g.phone||''}","${totalServiceCount}",${yr}\n`;
       });
       const encodedUri = encodeURI(csv);
       const link = document.createElement("a"); link.setAttribute("href", encodedUri);
@@ -1942,6 +2200,7 @@
     }
 
     function initApp() {
+      setCalendarsToCurrentDate();
       guides.sort((a, b) => a.name.localeCompare(b.name, 'it', { sensitivity: 'base' }));
       populateDropdowns();
       initFirebase();
