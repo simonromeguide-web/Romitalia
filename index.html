@@ -286,12 +286,12 @@
           </div>
         </div>
 
-        <!-- BARRA INIZIO CASCATA: MAGIC SHUFFLE E RESET MESE IN ALTO A DESTRA -->
+        <!-- BARRA INIZIO CASCATA: MAGIC SHUFFLE E RESET SOLO ASSEGNAZIONI -->
         <div class="cascade-top-toolbar">
           <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-main);">⬇️ Cascata Giornaliera Turni</span>
           <div class="cascade-top-actions">
             <button class="btn btn-magic btn-sm" onclick="runMagicShuffle()">🪄 Magic Shuffle (Solo Mese)</button>
-            <button class="btn btn-danger-light btn-sm" onclick="resetMonthData()">Reset Mese Selezionato</button>
+            <button class="btn btn-danger-light btn-sm" onclick="resetAssignmentsOnly()">Reset Assegnazioni (Mese)</button>
           </div>
         </div>
 
@@ -1117,25 +1117,27 @@
       return (el && el.value) ? el.value : getCurrentDateParts().monthStr;
     }
 
-    function resetMonthData() {
+    // RESET SOLO DELLE ASSEGNAZIONI DEL MESE SELEZIONATO (NO TOUR CARICATI, NO DISPONIBILITÀ GUIDE)
+    function resetAssignmentsOnly(silent = false) {
       const monthVal = getActiveMonthFilter();
-      if (!confirm(`Vuoi resettare tutti i turni e le disponibilità del mese ${monthVal}? Gli altri mesi non verranno modificati.`)) {
-        return;
+      if (!silent) {
+        if (!confirm(`Vuoi azzerare solo le assegnazioni delle guide per il mese ${monthVal}? I tour caricati e le disponibilità delle guide resteranno invariati.`)) {
+          return false;
+        }
       }
 
-      tours = tours.filter(t => !t.date || !t.date.startsWith(monthVal + '-'));
-
-      Object.keys(availabilities).forEach(key => {
-        const parts = key.split('_');
-        const dateKey = parts[1];
-        if (dateKey && dateKey.startsWith(monthVal + '-')) {
-          delete availabilities[key];
+      tours.forEach(t => {
+        if (t.date && t.date.startsWith(monthVal + '-')) {
+          t.guideId = '';
         }
       });
 
       saveData();
       renderAllViews();
-      alert(`Dati del mese ${monthVal} resettati con successo.`);
+      if (!silent) {
+        alert(`Assegnazioni del mese ${monthVal} azzerate. Tour e disponibilità guide mantenuti.`);
+      }
+      return true;
     }
 
     function syncSlotAndAutoQty() {
@@ -1505,9 +1507,23 @@
       return !isBusy;
     }
 
+    // MAGIC SHUFFLE SOLO PER IL MESE SELEZIONATO (RESET SOLO SULLE ASSEGNAZIONI, MAI SU TOUR O DISPONIBILITÀ)
     function runMagicShuffle() {
       const monthVal = getActiveMonthFilter();
-      if (!confirm(`Vuoi eseguire l'assegnazione automatica Magic Shuffle solo per i turni del mese ${monthVal}?`)) return;
+      const hasAssignedInMonth = tours.some(t => t.date && t.date.startsWith(monthVal + '-') && t.status !== 'Cancelled' && t.guideId);
+
+      if (hasAssignedInMonth) {
+        const resetFirst = confirm(
+          `Nel mese ${monthVal} ci sono già guide assegnate.\n\n` +
+          `• OK: Azzera solo le assegnazioni del mese e ricalcola da zero (tour e disponibilità guide restano invariati).\n` +
+          `• Annulla: Mantieni le assegnazioni esistenti e assegna solo i turni ancora scoperti.`
+        );
+        if (resetFirst) {
+          resetAssignmentsOnly(true);
+        }
+      } else {
+        if (!confirm(`Vuoi eseguire l'assegnazione automatica Magic Shuffle solo per i turni del mese ${monthVal}?`)) return;
+      }
 
       let guideFeeTotals = {};
       let guideServiceCounts = {};
