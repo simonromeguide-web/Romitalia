@@ -591,12 +591,17 @@
 
     const SERVICES_CATALOG = [
       { name: "VAT CHOICE AM", price: 295.00, type: "vaticano" },
+      { name: "VAT 2 GUIDA", price: 295.00, type: "vaticano" },
+      { name: "VAT 3 GUIDA", price: 295.00, type: "vaticano" },
       { name: "VAT NO BASILICA AM", price: 280.00, type: "vaticano" },
       { name: "COLOSSEUM CHOICE", price: 295.00, type: "colosseo" },
       { name: "COLOSSEUM GLOBUS NO CHOICE", price: 245.00, type: "colosseo" },
-      { name: "HIGH PM", price: 245.00, type: "other" },
-      { name: "HIGH AM", price: 245.00, type: "other" },
-      { name: "HIGH PM + CENA", price: 295.00, type: "other" },
+      { name: "HIGHLIGHTS", price: 250.00, type: "highlights" },
+      { name: "HIGHLIGHTS + CENA", price: 250.00, type: "highlights" },
+      { name: "HIGHLIGHTS COORDINATO", price: 280.00, type: "highlights" },
+      { name: "HIGH PM", price: 250.00, type: "highlights" },
+      { name: "HIGH AM", price: 250.00, type: "highlights" },
+      { name: "HIGH PM + CENA", price: 250.00, type: "highlights" },
       { name: "CSS", price: 245.00, type: "other" },
       { name: "SERALE GHETTO", price: 230.00, type: "other" },
       { name: "BASILICA DI SAN PIETRO", price: 230.00, type: "vaticano" },
@@ -803,16 +808,30 @@
       const cleanPart = (partName || '').trim();
       const cleanUpper = cleanPart.toUpperCase();
       if (!cleanPart) return 245.00;
+
+      // 1. Highlights coordinato -> 280 €
+      if (cleanUpper.includes('HIGH') && cleanUpper.includes('COORDINAT')) {
+        return 280.00;
+      }
+
+      // 2. Highlights e Highlights + Cena -> 250 €
+      if (cleanUpper.includes('HIGH')) {
+        return 250.00;
+      }
+
+      // 3. Vaticano (inclusi VAT 2 GUIDA, VAT 3 GUIDA, ecc.) -> 295 €
       if (cleanUpper.includes('VAT') || cleanUpper.includes('VATICANO')) {
         if (cleanUpper.includes('NO BASILICA')) return 280.00;
         if (cleanUpper.includes('BASILICA')) return 230.00;
         return 295.00;
       }
+
+      // 4. Colosseo (senza Vaticano) -> 245 € (o CHOICE 295 €)
       if (cleanUpper.includes('COLOSSEO') || cleanUpper.includes('COLOSSEUM') || cleanUpper === 'COL') {
         if (cleanUpper.includes('CHOICE')) return 295.00;
         return 245.00;
       }
-      if (cleanUpper.includes('CENA')) return 295.00;
+
       const s = SERVICES_CATALOG.find(x => x.name.toLowerCase() === cleanPart.toLowerCase());
       return s ? s.price : 245.00;
     }
@@ -822,26 +841,37 @@
         return [{ label: 'Servizio', fee: 245.00 }];
       }
 
+      const upper = serviceName.toUpperCase();
+
+      // Vaticano + Colosseo -> 295 € + 245 €
       if (isVaticanoPlusColosseo(serviceName)) {
         const parts = serviceName.split('+').map(p => p.trim()).filter(Boolean);
         if (parts.length >= 2) {
-          return parts.map((p, idx) => ({
-            label: `${serviceName} (Parte ${idx + 1}: ${p})`,
-            fee: getSinglePartFee(p)
-          }));
+          const vatPart = parts.find(p => p.toUpperCase().includes('VAT') || p.toUpperCase().includes('VATICANO')) || parts[0];
+          const colPart = parts.find(p => p.toUpperCase().includes('COL') || p.toUpperCase().includes('COLOSSEO') || p.toUpperCase().includes('COLOSSEUM')) || parts[1];
+          return [
+            { label: `${serviceName} (${vatPart})`, fee: 295.00 },
+            { label: `${serviceName} (${colPart})`, fee: 245.00 }
+          ];
         }
         return [
-          { label: `${serviceName} (Servizio Vaticano)`, fee: 295.00 },
-          { label: `${serviceName} (Servizio Colosseo)`, fee: 245.00 }
+          { label: `${serviceName} (Vaticano)`, fee: 295.00 },
+          { label: `${serviceName} (Colosseo)`, fee: 245.00 }
         ];
       }
 
-      const upper = serviceName.toUpperCase();
-      if ((upper.includes('BASILICA') || upper.includes('SAN PIETRO')) && upper.includes('FORI')) {
-        return [{ label: serviceName, fee: 245.00 }];
+      // Highlights coordinato -> 280 €
+      if (upper.includes('HIGH') && upper.includes('COORDINAT')) {
+        return [{ label: serviceName, fee: 280.00 }];
       }
 
-      if (upper.includes('+') && !upper.includes('CENA')) {
+      // Highlights e Highlights + Cena -> 250 €
+      if (upper.includes('HIGH')) {
+        return [{ label: serviceName, fee: 250.00 }];
+      }
+
+      // Altri servizi combinati con '+'
+      if (upper.includes('+')) {
         const parts = serviceName.split('+');
         let totalSum = 0;
         parts.forEach(part => {
@@ -850,8 +880,9 @@
         return [{ label: serviceName, fee: totalSum }];
       }
 
-      if (upper.includes('VAT') || upper.includes('CENA')) {
-        return [{ label: serviceName, fee: 295.00 }];
+      // Colosseo senza Vaticano -> 245 €
+      if (upper.includes('COLOSSEO') || upper.includes('COLOSSEUM') || upper === 'COL') {
+        return [{ label: serviceName, fee: 245.00 }];
       }
 
       const s = SERVICES_CATALOG.find(x => x.name.toLowerCase() === serviceName.toLowerCase());
